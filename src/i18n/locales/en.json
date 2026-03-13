@@ -1,0 +1,26 @@
+{
+  "nav": {
+    "home": "Home"
+  },
+  "home": {
+    "title": "Welcome to Your React App",
+    "subtitle": "Built with Vite, React, TypeScript, Tailwind CSS, and shadcn/ui",
+    "getStarted": "Get Started",
+    "learnMore": "Learn More",
+    "setupComplete": "Project Setup Complete",
+    "features": {
+      "vite": "Vite with React and TypeScript",
+      "tailwind": "Tailwind CSS configured",
+      "shadcn": "shadcn/ui components ready",
+      "router": "React Router configured",
+      "paths": "Path aliases configured (@/*)",
+      "darkMode": "Dark mode support",
+      "i18n": "Internationalization ready (EN/FR)"
+    }
+  },
+  "notFound": {
+    "title": "Page Not Found",
+    "message": "The page you're looking for doesn't exist.",
+    "backHome": "Back to Home"
+  }
+}
