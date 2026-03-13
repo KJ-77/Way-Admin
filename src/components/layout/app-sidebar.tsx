@@ -1,0 +1,164 @@
+import { useLocation, Link } from "react-router-dom"
+import { useTranslation } from "react-i18next"
+import {
+  LayoutDashboard,
+  Users,
+  CalendarDays,
+  Package,
+  GraduationCap,
+  Settings,
+  Palette,
+  ChevronUp,
+  LogOut,
+} from "lucide-react"
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarRail,
+} from "@/components/ui/sidebar"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+
+const AppSidebar = () => {
+  const { t } = useTranslation()
+  const location = useLocation()
+
+  const navItems = [
+    { title: t("nav.dashboard"), url: "/", icon: LayoutDashboard },
+    { title: t("nav.users"), url: "/users", icon: Users },
+    { title: t("nav.sessions"), url: "/sessions", icon: CalendarDays },
+    { title: t("nav.packages"), url: "/packages", icon: Package },
+    { title: t("nav.tutors"), url: "/tutors", icon: GraduationCap },
+  ]
+
+  const isActive = (url: string) => {
+    if (url === "/") return location.pathname === "/"
+    return location.pathname.startsWith(url)
+  }
+
+  return (
+    <Sidebar collapsible="icon" className="border-sidebar-border">
+      <SidebarHeader className="p-4">
+        <Link to="/" className="flex items-center gap-3 group-data-[collapsible=icon]:justify-center">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+            <Palette className="h-4 w-4" />
+          </div>
+          <div className="flex flex-col group-data-[collapsible=icon]:hidden">
+            <span className="text-sm font-bold tracking-wide">{t("app.name")}</span>
+            <span className="text-[10px] text-muted-foreground">{t("app.tagline")}</span>
+          </div>
+        </Link>
+      </SidebarHeader>
+
+      <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupLabel className="text-xs uppercase tracking-wider text-muted-foreground/60">
+            Menu
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {navItems.map((item) => (
+                <SidebarMenuItem key={item.url}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive(item.url)}
+                    tooltip={item.title}
+                    className="transition-all duration-200"
+                  >
+                    <Link to={item.url}>
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel className="text-xs uppercase tracking-wider text-muted-foreground/60">
+            System
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={isActive("/settings")}
+                  tooltip={t("nav.settings")}
+                  className="transition-all duration-200"
+                >
+                  <Link to="/settings">
+                    <Settings className="h-4 w-4" />
+                    <span>{t("nav.settings")}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+
+      <SidebarFooter className="p-2">
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <SidebarMenuButton
+                  size="lg"
+                  className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+                >
+                  <Avatar className="h-8 w-8">
+                    <AvatarFallback className="bg-primary/20 text-primary text-xs font-semibold">
+                      TR
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex flex-col gap-0.5 leading-none group-data-[collapsible=icon]:hidden">
+                    <span className="text-sm font-medium">Tarek Ramadan</span>
+                    <span className="text-[10px] text-muted-foreground">Admin</span>
+                  </div>
+                  <ChevronUp className="ms-auto h-4 w-4 group-data-[collapsible=icon]:hidden" />
+                </SidebarMenuButton>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                className="w-56"
+                side="top"
+                align="start"
+                sideOffset={8}
+              >
+                <DropdownMenuItem>
+                  <Settings className="me-2 h-4 w-4" />
+                  {t("nav.settings")}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem className="text-destructive focus:text-destructive">
+                  <LogOut className="me-2 h-4 w-4" />
+                  Logout
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
+
+      <SidebarRail />
+    </Sidebar>
+  )
+}
+
+export default AppSidebar
