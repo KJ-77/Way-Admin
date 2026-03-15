@@ -7,6 +7,8 @@ import UsersPage from "@/pages/users"
 import SessionsPage from "@/pages/sessions"
 import PackagesPage from "@/pages/packages"
 import TutorsPage from "@/pages/tutors"
+import SchedulePage from "@/pages/schedule"
+import AccountsPage from "@/pages/accounts"
 import SettingsPage from "@/pages/settings"
 import NotFound from "@/pages/not-found"
 
@@ -22,6 +24,8 @@ const App = () => {
               <Route path="/sessions" element={<SessionsPage />} />
               <Route path="/packages" element={<PackagesPage />} />
               <Route path="/tutors" element={<TutorsPage />} />
+              <Route path="/schedule" element={<SchedulePage />} />
+              <Route path="/accounts" element={<AccountsPage />} />
               <Route path="/settings" element={<SettingsPage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>

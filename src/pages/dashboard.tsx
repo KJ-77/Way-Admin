@@ -3,7 +3,7 @@ import StatsCards from "@/components/dashboard/stats-cards"
 import RevenueChart from "@/components/dashboard/revenue-chart"
 import SessionsByTypeChart from "@/components/dashboard/sessions-by-type-chart"
 import WeeklyActivityChart from "@/components/dashboard/weekly-activity-chart"
-import RecentActivity from "@/components/dashboard/recent-activity"
+import WeeklyCalendar from "@/components/dashboard/weekly-calendar"
 import UpcomingSessions from "@/components/dashboard/upcoming-sessions"
 import ClientGrowthChart from "@/components/dashboard/client-growth-chart"
 import PackageBreakdownChart from "@/components/dashboard/package-breakdown-chart"
@@ -30,7 +30,7 @@ const Dashboard = () => {
 
       <div className="grid gap-4 lg:grid-cols-3">
         <WeeklyActivityChart />
-        <RecentActivity />
+        <WeeklyCalendar />
         <UpcomingSessions />
       </div>
 

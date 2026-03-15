@@ -1,4 +1,4 @@
-import type { User, Package, Session, Tutor, ActivityItem } from "@/types"
+import type { User, Package, Session, Tutor, ActivityItem, ScheduleEvent, AdminAccount } from "@/types"
 
 export const tutors: Tutor[] = [
   { id: 1, full_name: "Layla Khoury", email: "layla@way-studio.com", phone: "+961 71 234 567" },
@@ -246,4 +246,37 @@ export const clientGrowthData = [
   { month: "Jan", clients: 9 },
   { month: "Feb", clients: 11 },
   { month: "Mar", clients: 12 },
+]
+
+export const scheduleEvents: ScheduleEvent[] = [
+  // Monday 2025-03-10
+  { id: 1, date: "2025-03-10", startTime: "10:00", duration: 120, title: "Pottery Group A", tutorId: 1, classType: "pottery" },
+  { id: 2, date: "2025-03-10", startTime: "14:00", duration: 120, title: "Glass Workshop", tutorId: 2, classType: "glass" },
+  // Tuesday 2025-03-11
+  { id: 3, date: "2025-03-11", startTime: "10:00", duration: 120, title: "Canvas Studio", tutorId: 1, classType: "canvas" },
+  { id: 4, date: "2025-03-11", startTime: "14:00", duration: 120, title: "Pottery Basics", tutorId: 3, classType: "pottery" },
+  { id: 5, date: "2025-03-11", startTime: "16:00", duration: 90, title: "Mixed Media Intro", tutorId: 4, classType: "mixed-media" },
+  // Wednesday 2025-03-12
+  { id: 6, date: "2025-03-12", startTime: "10:00", duration: 120, title: "Pottery Advanced", tutorId: 1, classType: "pottery" },
+  { id: 7, date: "2025-03-12", startTime: "14:00", duration: 120, title: "Glass Art", tutorId: 2, classType: "glass" },
+  // Thursday 2025-03-13
+  { id: 8, date: "2025-03-13", startTime: "10:00", duration: 120, title: "Pottery Group B", tutorId: 1, classType: "pottery" },
+  { id: 9, date: "2025-03-13", startTime: "14:00", duration: 120, title: "Glass Basics", tutorId: 2, classType: "glass" },
+  { id: 10, date: "2025-03-13", startTime: "16:00", duration: 120, title: "Canvas Painting", tutorId: 3, classType: "canvas" },
+  // Friday 2025-03-14
+  { id: 11, date: "2025-03-14", startTime: "10:00", duration: 120, title: "Pottery Workshop", tutorId: 1, classType: "pottery" },
+  { id: 12, date: "2025-03-14", startTime: "14:00", duration: 90, title: "Mixed Media Lab", tutorId: 4, classType: "mixed-media" },
+  // Saturday 2025-03-15
+  { id: 13, date: "2025-03-15", startTime: "10:00", duration: 120, title: "Pottery Open Studio", tutorId: 1, classType: "pottery" },
+  { id: 14, date: "2025-03-15", startTime: "14:00", duration: 120, title: "Glass Workshop", tutorId: 2, classType: "glass" },
+]
+
+export const adminAccounts: AdminAccount[] = [
+  { id: 1, full_name: "Tarek Ramadan", email: "tarek@way-studio.com", phone: "+961 70 100 200", role: "admin", status: "active", created_at: "2023-01-01" },
+  { id: 2, full_name: "Layla Khoury", email: "layla@way-studio.com", phone: "+961 71 234 567", role: "tutor", status: "active", created_at: "2023-06-15" },
+  { id: 3, full_name: "Omar Haddad", email: "omar@way-studio.com", phone: "+961 71 345 678", role: "tutor", status: "active", created_at: "2023-06-15" },
+  { id: 4, full_name: "Nadia Saab", email: "nadia@way-studio.com", phone: "+961 71 456 789", role: "tutor", status: "active", created_at: "2024-01-10" },
+  { id: 5, full_name: "Rami Farah", email: "rami@way-studio.com", phone: "+961 71 567 890", role: "tutor", status: "active", created_at: "2024-03-20" },
+  { id: 6, full_name: "Hana Darwish", email: "hana@way-studio.com", phone: "+961 70 300 400", role: "receptionist", status: "active", created_at: "2024-05-01" },
+  { id: 7, full_name: "Fadi Moussawi", email: "fadi@way-studio.com", phone: "+961 70 500 600", role: "admin", status: "suspended", created_at: "2023-01-01" },
 ]

@@ -4,9 +4,11 @@ import {
   LayoutDashboard,
   Users,
   CalendarDays,
+  CalendarClock,
   Package,
   GraduationCap,
   Settings,
+  UserCog,
   Palette,
   ChevronUp,
   LogOut,
@@ -34,13 +36,14 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 
 const AppSidebar = () => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const location = useLocation()
 
   const navItems = [
     { title: t("nav.dashboard"), url: "/", icon: LayoutDashboard },
     { title: t("nav.users"), url: "/users", icon: Users },
     { title: t("nav.sessions"), url: "/sessions", icon: CalendarDays },
+    { title: t("nav.schedule"), url: "/schedule", icon: CalendarClock },
     { title: t("nav.packages"), url: "/packages", icon: Package },
     { title: t("nav.tutors"), url: "/tutors", icon: GraduationCap },
   ]
@@ -51,7 +54,7 @@ const AppSidebar = () => {
   }
 
   return (
-    <Sidebar collapsible="icon" className="border-sidebar-border">
+    <Sidebar collapsible="icon" side={i18n.language === "ar" ? "right" : "left"} className="border-sidebar-border">
       <SidebarHeader className="p-4">
         <Link to="/" className="flex items-center gap-3 group-data-[collapsible=icon]:justify-center">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
@@ -96,6 +99,19 @@ const AppSidebar = () => {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={isActive("/accounts")}
+                  tooltip={t("nav.accounts")}
+                  className="transition-all duration-200"
+                >
+                  <Link to="/accounts">
+                    <UserCog className="h-4 w-4" />
+                    <span>{t("nav.accounts")}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton
                   asChild

@@ -30,8 +30,10 @@ const AppHeader = () => {
       const keyMap: Record<string, string> = {
         users: "nav.users",
         sessions: "nav.sessions",
+        schedule: "nav.schedule",
         packages: "nav.packages",
         tutors: "nav.tutors",
+        accounts: "nav.accounts",
         settings: "nav.settings",
       }
       return { label: t(keyMap[segment] ?? segment), href }

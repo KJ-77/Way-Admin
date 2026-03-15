@@ -68,3 +68,26 @@ export interface ActivityItem {
   subject: string
   timestamp: string
 }
+
+export interface ScheduleEvent {
+  id: number
+  date: string
+  startTime: string
+  duration: number
+  title: string
+  tutorId: number
+  classType: ClassType
+}
+
+export type AccountRole = "admin" | "tutor" | "receptionist"
+export type AccountStatus = "active" | "suspended"
+
+export interface AdminAccount {
+  id: number
+  full_name: string
+  email: string
+  phone: string
+  role: AccountRole
+  status: AccountStatus
+  created_at: string
+}
