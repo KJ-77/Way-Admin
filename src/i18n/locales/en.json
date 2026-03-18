@@ -41,7 +41,10 @@
     "newClient": "New Client",
     "newSession": "New Session",
     "newPackage": "New Package",
-    "viewAll": "View All"
+    "viewAll": "View All",
+    "todaySchedule": "Today's Schedule",
+    "noSessionsToday": "No sessions scheduled for today",
+    "upcoming": "Coming up"
   },
   "users": {
     "title": "Clients",

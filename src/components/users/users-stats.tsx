@@ -1,5 +1,4 @@
 import { Users, UserCheck, Crown, UserPlus, Loader2 } from "lucide-react"
-import { Card, CardContent } from "@/components/ui/card"
 import type { User } from "@/types"
 
 interface UsersStatsProps {
@@ -12,50 +11,29 @@ const UsersStats = ({ users, loading }: UsersStatsProps) => {
   const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
 
   const statItems = [
-    {
-      label: "Total Clients",
-      value: users.length,
-      icon: Users,
-      color: "text-chart-1 bg-chart-1/10",
-    },
-    {
-      label: "Active",
-      value: users.filter(u => u.status === "Active").length,
-      icon: UserCheck,
-      color: "text-chart-2 bg-chart-2/10",
-    },
-    {
-      label: "High Loyalty",
-      value: users.filter(u => u.loyalty === "High").length,
-      icon: Crown,
-      color: "text-chart-4 bg-chart-4/10",
-    },
-    {
-      label: "New This Month",
-      value: users.filter(u => u.first_visit >= firstOfMonth).length,
-      icon: UserPlus,
-      color: "text-chart-3 bg-chart-3/10",
-    },
+    { label: "Total Clients", value: users.length, icon: Users },
+    { label: "Active", value: users.filter(u => u.status === "Active").length, icon: UserCheck },
+    { label: "High Loyalty", value: users.filter(u => u.loyalty === "High").length, icon: Crown },
+    { label: "New This Month", value: users.filter(u => u.first_visit >= firstOfMonth).length, icon: UserPlus },
   ]
 
+  if (loading) {
+    return (
+      <div className="flex items-center gap-2 py-1">
+        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+        <span className="text-sm text-muted-foreground">Loading stats...</span>
+      </div>
+    )
+  }
+
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="flex flex-wrap gap-x-6 gap-y-2">
       {statItems.map((item) => (
-        <Card key={item.label}>
-          <CardContent className="flex items-center gap-4 p-4">
-            <div className={`rounded-lg p-2.5 ${item.color}`}>
-              <item.icon className="h-5 w-5" />
-            </div>
-            <div>
-              {loading ? (
-                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-              ) : (
-                <p className="text-2xl font-bold">{item.value}</p>
-              )}
-              <p className="text-xs text-muted-foreground">{item.label}</p>
-            </div>
-          </CardContent>
-        </Card>
+        <div key={item.label} className="flex items-center gap-2">
+          <item.icon className="h-4 w-4 text-muted-foreground" />
+          <span className="text-sm text-muted-foreground">{item.label}</span>
+          <span className="text-sm font-semibold">{item.value}</span>
+        </div>
       ))}
     </div>
   )

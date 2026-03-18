@@ -21,7 +21,7 @@ import {
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import AddUserDialog from "@/components/users/add-user-dialog"
 import { getTutorName } from "@/data/mock-data"
 import type { User, UserStatus, Level, Section } from "@/types"
@@ -103,19 +103,7 @@ const UsersTable = ({ users, loading, error, onRefetch }: UsersTableProps) => {
   return (
     <>
     <Card>
-      <CardHeader>
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <CardTitle>{t("users.title")}</CardTitle>
-            <CardDescription>{t("users.description")}</CardDescription>
-          </div>
-          <Button className="gap-2" onClick={() => setIsAddOpen(true)}>
-            <UserPlus className="h-4 w-4" />
-            {t("users.addUser")}
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent>
+      <CardContent className="pt-6">
         <div className="flex flex-col gap-4 mb-4 sm:flex-row sm:items-center">
           <div className="relative flex-1">
             <Search className="absolute start-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -127,6 +115,10 @@ const UsersTable = ({ users, loading, error, onRefetch }: UsersTableProps) => {
             />
           </div>
           <div className="flex gap-2 flex-wrap">
+            <Button className="gap-2" onClick={() => setIsAddOpen(true)}>
+              <UserPlus className="h-4 w-4" />
+              {t("users.addUser")}
+            </Button>
             <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as UserStatus | "all")}>
               <SelectTrigger className="w-[130px]">
                 <Filter className="h-3.5 w-3.5 me-1.5" />

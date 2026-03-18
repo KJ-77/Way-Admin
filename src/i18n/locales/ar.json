@@ -41,7 +41,10 @@
     "newClient": "عميل جديد",
     "newSession": "جلسة جديدة",
     "newPackage": "باقة جديدة",
-    "viewAll": "عرض الكل"
+    "viewAll": "عرض الكل",
+    "todaySchedule": "جدول اليوم",
+    "noSessionsToday": "لا توجد جلسات مجدولة لليوم",
+    "upcoming": "قادم"
   },
   "users": {
     "title": "العملاء",
