@@ -1,9 +1,9 @@
-export type Gender = "male" | "female"
-export type Level = "beginner" | "intermediate" | "advanced"
-export type Loyalty = "new" | "regular" | "vip"
-export type ReferralSource = "walk-in" | "social-media" | "friend" | "website" | "other"
-export type UserStatus = "active" | "inactive"
-export type Section = "pottery" | "glass" | "canvas" | "mixed"
+export type Gender = "Male" | "Female"
+export type Level = "Beginner" | "Mid" | "Advanced"
+export type Loyalty = "Low" | "Mid" | "High"
+export type ReferralSource = "Referral" | "SCM" | "Walk-In"
+export type UserStatus = "Active" | "Dormant"
+export type Section = "Studio" | "PC"
 export type PackageType = "basic" | "standard" | "premium"
 export type PackageStatus = "active" | "expired" | "depleted"
 export type ClassType = "pottery" | "glass" | "canvas" | "mixed-media"
@@ -13,9 +13,9 @@ export interface User {
   id: number
   full_name: string
   gender: Gender
-  age_group: number
+  dob: string
   level: Level
-  preferred_tutor: number
+  preferred_tutor: number | null
   loyalty: Loyalty
   phone: string
   email: string
@@ -24,6 +24,8 @@ export interface User {
   status: UserStatus
   section: Section
   notes: string
+  created_at: string
+  updated_at: string
 }
 
 export interface Package {

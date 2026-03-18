@@ -1,8 +1,16 @@
-import { Users, UserCheck, Crown, UserPlus } from "lucide-react"
+import { Users, UserCheck, Crown, UserPlus, Loader2 } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
-import { users } from "@/data/mock-data"
+import type { User } from "@/types"
 
-const UsersStats = () => {
+interface UsersStatsProps {
+  users: User[]
+  loading: boolean
+}
+
+const UsersStats = ({ users, loading }: UsersStatsProps) => {
+  const now = new Date()
+  const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
+
   const statItems = [
     {
       label: "Total Clients",
@@ -12,19 +20,19 @@ const UsersStats = () => {
     },
     {
       label: "Active",
-      value: users.filter(u => u.status === "active").length,
+      value: users.filter(u => u.status === "Active").length,
       icon: UserCheck,
       color: "text-chart-2 bg-chart-2/10",
     },
     {
-      label: "VIP",
-      value: users.filter(u => u.loyalty === "vip").length,
+      label: "High Loyalty",
+      value: users.filter(u => u.loyalty === "High").length,
       icon: Crown,
       color: "text-chart-4 bg-chart-4/10",
     },
     {
       label: "New This Month",
-      value: users.filter(u => u.first_visit >= "2025-03-01").length,
+      value: users.filter(u => u.first_visit >= firstOfMonth).length,
       icon: UserPlus,
       color: "text-chart-3 bg-chart-3/10",
     },
@@ -39,7 +47,11 @@ const UsersStats = () => {
               <item.icon className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-2xl font-bold">{item.value}</p>
+              {loading ? (
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              ) : (
+                <p className="text-2xl font-bold">{item.value}</p>
+              )}
               <p className="text-xs text-muted-foreground">{item.label}</p>
             </div>
           </CardContent>

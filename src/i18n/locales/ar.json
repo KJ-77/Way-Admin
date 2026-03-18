@@ -56,7 +56,7 @@
     "section": "القسم",
     "loyalty": "الولاء",
     "gender": "الجنس",
-    "ageGroup": "العمر",
+    "dateOfBirth": "تاريخ الميلاد",
     "referralSource": "مصدر الإحالة",
     "firstVisit": "أول زيارة",
     "preferredTutor": "المدرب المفضل",
@@ -66,10 +66,17 @@
     "delete": "حذف",
     "view": "عرض التفاصيل",
     "active": "نشط",
-    "inactive": "غير نشط",
+    "dormant": "خامل",
     "allStatuses": "جميع الحالات",
     "allLevels": "جميع المستويات",
-    "allSections": "جميع الأقسام"
+    "allSections": "جميع الأقسام",
+    "addUserTitle": "إضافة عميل جديد",
+    "addUserDescription": "املأ التفاصيل لتسجيل عميل جديد.",
+    "pickDate": "اختر تاريخ",
+    "tutorIdPlaceholder": "رقم المدرب (اختياري)",
+    "notesPlaceholder": "ملاحظات اختيارية حول العميل...",
+    "deleteConfirm": "حذف العميل",
+    "deleteWarning": "هل أنت متأكد؟ لا يمكن التراجع عن هذا الإجراء."
   },
   "sessions": {
     "title": "الجلسات",

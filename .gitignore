@@ -25,3 +25,7 @@ dist-ssr
 
 
 /local
+
+# Environment variables
+.env
+.env.*

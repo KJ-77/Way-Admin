@@ -1,7 +1,8 @@
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
+import { toast } from "sonner"
 import {
-  Search, MoreHorizontal, UserPlus, Filter, Eye, Pencil, Trash2,
+  Search, UserPlus, Filter, Eye, Pencil, Trash2, Loader2, AlertCircle,
 } from "lucide-react"
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -14,35 +15,53 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select"
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+  ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuTrigger,
+} from "@/components/ui/context-menu"
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { users, getTutorName } from "@/data/mock-data"
-import type { UserStatus, Level, Section } from "@/types"
+import AddUserDialog from "@/components/users/add-user-dialog"
+import { getTutorName } from "@/data/mock-data"
+import type { User, UserStatus, Level, Section } from "@/types"
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
+
+interface UsersTableProps {
+  users: User[]
+  loading: boolean
+  error: string | null
+  onRefetch: () => void
+}
 
 const statusColors: Record<string, string> = {
-  active: "bg-emerald-500/15 text-emerald-500 border-emerald-500/30",
-  inactive: "bg-zinc-500/15 text-zinc-400 border-zinc-500/30",
+  Active: "bg-emerald-500/15 text-emerald-500 border-emerald-500/30",
+  Dormant: "bg-zinc-500/15 text-zinc-400 border-zinc-500/30",
 }
 
 const levelColors: Record<string, string> = {
-  beginner: "bg-blue-500/15 text-blue-400 border-blue-500/30",
-  intermediate: "bg-amber-500/15 text-amber-400 border-amber-500/30",
-  advanced: "bg-purple-500/15 text-purple-400 border-purple-500/30",
+  Beginner: "bg-blue-500/15 text-blue-400 border-blue-500/30",
+  Mid: "bg-amber-500/15 text-amber-400 border-amber-500/30",
+  Advanced: "bg-purple-500/15 text-purple-400 border-purple-500/30",
 }
 
 const loyaltyColors: Record<string, string> = {
-  new: "bg-sky-500/15 text-sky-400 border-sky-500/30",
-  regular: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
-  vip: "bg-amber-500/15 text-amber-400 border-amber-500/30",
+  Low: "bg-sky-500/15 text-sky-400 border-sky-500/30",
+  Mid: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
+  High: "bg-amber-500/15 text-amber-400 border-amber-500/30",
 }
 
-const UsersTable = () => {
+const UsersTable = ({ users, loading, error, onRefetch }: UsersTableProps) => {
   const { t } = useTranslation()
   const [search, setSearch] = useState("")
+  const [isAddOpen, setIsAddOpen] = useState(false)
   const [statusFilter, setStatusFilter] = useState<UserStatus | "all">("all")
   const [levelFilter, setLevelFilter] = useState<Level | "all">("all")
   const [sectionFilter, setSectionFilter] = useState<Section | "all">("all")
+
+  const [deleteTarget, setDeleteTarget] = useState<User | null>(null)
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   const filteredUsers = users.filter(user => {
     const matchesSearch = user.full_name.toLowerCase().includes(search.toLowerCase()) ||
@@ -54,7 +73,33 @@ const UsersTable = () => {
     return matchesSearch && matchesStatus && matchesLevel && matchesSection
   })
 
+  const handleDelete = async () => {
+    if (!deleteTarget) return
+    setDeleting(true)
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/users/${deleteTarget.id}`, {
+        method: "DELETE",
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null)
+        throw new Error(errorData?.message || errorData?.error || `Failed to delete client: ${response.status}`)
+      }
+
+      setIsDeleteOpen(false)
+      setDeleteTarget(null)
+      onRefetch()
+      toast.success("Client deleted successfully")
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to delete client")
+    } finally {
+      setDeleting(false)
+    }
+  }
+
   return (
+    <>
     <Card>
       <CardHeader>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -62,7 +107,7 @@ const UsersTable = () => {
             <CardTitle>{t("users.title")}</CardTitle>
             <CardDescription>{t("users.description")}</CardDescription>
           </div>
-          <Button className="gap-2">
+          <Button className="gap-2" onClick={() => setIsAddOpen(true)}>
             <UserPlus className="h-4 w-4" />
             {t("users.addUser")}
           </Button>
@@ -87,8 +132,8 @@ const UsersTable = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{t("users.allStatuses")}</SelectItem>
-                <SelectItem value="active">{t("users.active")}</SelectItem>
-                <SelectItem value="inactive">{t("users.inactive")}</SelectItem>
+                <SelectItem value="Active">{t("users.active")}</SelectItem>
+                <SelectItem value="Dormant">{t("users.dormant")}</SelectItem>
               </SelectContent>
             </Select>
             <Select value={levelFilter} onValueChange={(v) => setLevelFilter(v as Level | "all")}>
@@ -97,9 +142,9 @@ const UsersTable = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{t("users.allLevels")}</SelectItem>
-                <SelectItem value="beginner">Beginner</SelectItem>
-                <SelectItem value="intermediate">Intermediate</SelectItem>
-                <SelectItem value="advanced">Advanced</SelectItem>
+                <SelectItem value="Beginner">Beginner</SelectItem>
+                <SelectItem value="Mid">Mid</SelectItem>
+                <SelectItem value="Advanced">Advanced</SelectItem>
               </SelectContent>
             </Select>
             <Select value={sectionFilter} onValueChange={(v) => setSectionFilter(v as Section | "all")}>
@@ -108,112 +153,148 @@ const UsersTable = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{t("users.allSections")}</SelectItem>
-                <SelectItem value="pottery">Pottery</SelectItem>
-                <SelectItem value="glass">Glass</SelectItem>
-                <SelectItem value="canvas">Canvas</SelectItem>
-                <SelectItem value="mixed">Mixed</SelectItem>
+                <SelectItem value="Studio">Studio</SelectItem>
+                <SelectItem value="PC">PC</SelectItem>
               </SelectContent>
             </Select>
           </div>
         </div>
 
-        <div className="rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t("users.name")}</TableHead>
-                <TableHead className="hidden md:table-cell">{t("users.email")}</TableHead>
-                <TableHead className="hidden sm:table-cell">{t("users.section")}</TableHead>
-                <TableHead>{t("users.level")}</TableHead>
-                <TableHead className="hidden lg:table-cell">{t("users.loyalty")}</TableHead>
-                <TableHead>{t("users.status")}</TableHead>
-                <TableHead className="hidden lg:table-cell">{t("users.preferredTutor")}</TableHead>
-                <TableHead className="w-[50px]">{t("users.actions")}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredUsers.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
-                    {t("common.noResults")}
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredUsers.map((user) => (
-                  <TableRow key={user.id} className="group">
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-8 w-8">
-                          <AvatarFallback className="text-xs bg-primary/10 text-primary">
-                            {user.full_name.split(" ").map(n => n[0]).join("")}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className="font-medium text-sm">{user.full_name}</p>
-                          <p className="text-xs text-muted-foreground md:hidden">{user.email}</p>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
-                      {user.email}
-                    </TableCell>
-                    <TableCell className="hidden sm:table-cell">
-                      <span className="text-sm capitalize">{user.section}</span>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className={levelColors[user.level]}>
-                        {user.level}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="hidden lg:table-cell">
-                      <Badge variant="outline" className={loyaltyColors[user.loyalty]}>
-                        {user.loyalty}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className={statusColors[user.status]}>
-                        {user.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
-                      {getTutorName(user.preferred_tutor)}
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem>
+        {error ? (
+          <div className="flex flex-col items-center justify-center py-12 text-destructive gap-2">
+            <AlertCircle className="h-8 w-8" />
+            <p className="text-sm font-medium">Failed to load users</p>
+            <p className="text-xs text-muted-foreground">{error}</p>
+          </div>
+        ) : loading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          </div>
+        ) : (
+          <>
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t("users.name")}</TableHead>
+                    <TableHead className="hidden md:table-cell">{t("users.email")}</TableHead>
+                    <TableHead className="hidden sm:table-cell">{t("users.section")}</TableHead>
+                    <TableHead>{t("users.level")}</TableHead>
+                    <TableHead className="hidden lg:table-cell">{t("users.loyalty")}</TableHead>
+                    <TableHead>{t("users.status")}</TableHead>
+                    <TableHead className="hidden lg:table-cell">{t("users.preferredTutor")}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredUsers.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                        {t("common.noResults")}
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredUsers.map((user) => (
+                      <ContextMenu key={user.id}>
+                        <ContextMenuTrigger asChild>
+                          <TableRow className="cursor-context-menu">
+                            <TableCell>
+                              <div className="flex items-center gap-3">
+                                <Avatar className="h-8 w-8">
+                                  <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                                    {user.full_name.split(" ").map(n => n[0]).join("")}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div>
+                                  <p className="font-medium text-sm">{user.full_name}</p>
+                                  <p className="text-xs text-muted-foreground md:hidden">{user.email}</p>
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
+                              {user.email}
+                            </TableCell>
+                            <TableCell className="hidden sm:table-cell">
+                              <span className="text-sm">{user.section}</span>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline" className={levelColors[user.level]}>
+                                {user.level}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="hidden lg:table-cell">
+                              <Badge variant="outline" className={loyaltyColors[user.loyalty]}>
+                                {user.loyalty}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline" className={statusColors[user.status]}>
+                                {user.status}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
+                              {getTutorName(user.preferred_tutor)}
+                            </TableCell>
+                          </TableRow>
+                        </ContextMenuTrigger>
+                        <ContextMenuContent>
+                          <ContextMenuItem>
                             <Eye className="me-2 h-4 w-4" />
                             {t("users.view")}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
+                          </ContextMenuItem>
+                          <ContextMenuItem>
                             <Pencil className="me-2 h-4 w-4" />
                             {t("users.edit")}
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem className="text-destructive focus:text-destructive">
+                          </ContextMenuItem>
+                          <ContextMenuSeparator />
+                          <ContextMenuItem
+                            variant="destructive"
+                            onClick={() => { setDeleteTarget(user); setIsDeleteOpen(true) }}
+                          >
                             <Trash2 className="me-2 h-4 w-4" />
                             {t("users.delete")}
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
+                          </ContextMenuItem>
+                        </ContextMenuContent>
+                      </ContextMenu>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
 
-        <div className="flex items-center justify-between mt-4 text-sm text-muted-foreground">
-          <span>{t("common.showing")} {filteredUsers.length} {t("common.of")} {users.length} {t("common.results")}</span>
-        </div>
+            <div className="flex items-center justify-between mt-4 text-sm text-muted-foreground">
+              <span>{t("common.showing")} {filteredUsers.length} {t("common.of")} {users.length} {t("common.results")}</span>
+            </div>
+          </>
+        )}
       </CardContent>
     </Card>
+
+    <AddUserDialog open={isAddOpen} onOpenChange={setIsAddOpen} onSuccess={onRefetch} />
+
+    {/* Delete Confirmation Dialog */}
+    <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{t("users.deleteConfirm", "Delete Client")}</DialogTitle>
+          <DialogDescription>{t("users.deleteWarning", "Are you sure? This action cannot be undone.")}</DialogDescription>
+        </DialogHeader>
+        {deleteTarget && (
+          <p className="text-sm text-muted-foreground">
+            {deleteTarget.full_name} ({deleteTarget.email})
+          </p>
+        )}
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setIsDeleteOpen(false)} disabled={deleting}>
+            {t("common.cancel")}
+          </Button>
+          <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
+            {deleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {t("common.delete")}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    </>
   )
 }
 

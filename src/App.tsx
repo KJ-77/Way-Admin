@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom"
 import { ThemeProvider } from "@/components/theme-provider"
+import { Toaster } from "@/components/ui/sonner"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import AppLayout from "@/components/layout/app-layout"
 import Dashboard from "@/pages/dashboard"
@@ -32,6 +33,7 @@ const App = () => {
           </AppLayout>
         </Router>
       </TooltipProvider>
+      <Toaster />
     </ThemeProvider>
   )
 }

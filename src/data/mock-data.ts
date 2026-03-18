@@ -9,76 +9,76 @@ export const tutors: Tutor[] = [
 
 export const users: User[] = [
   {
-    id: 1, full_name: "Sara Mansour", gender: "female", age_group: 28, level: "intermediate",
-    preferred_tutor: 1, loyalty: "vip", phone: "+961 70 111 222", email: "sara.m@gmail.com",
-    first_visit: "2024-03-15", referral_source: "social-media", status: "active", section: "pottery",
-    notes: "Very talented, interested in advanced glazing techniques"
+    id: 1, full_name: "Sara Mansour", gender: "Female", dob: "1998-05-15T00:00:00.000Z", level: "Mid",
+    preferred_tutor: 1, loyalty: "High", phone: "+961 70 111 222", email: "sara.m@gmail.com",
+    first_visit: "2024-03-15T00:00:00.000Z", referral_source: "SCM", status: "Active", section: "Studio",
+    notes: "Very talented, interested in advanced glazing techniques", created_at: "2024-03-15T10:00:00.000Z", updated_at: "2024-03-15T10:00:00.000Z"
   },
   {
-    id: 2, full_name: "Ahmad Bazzi", gender: "male", age_group: 35, level: "beginner",
-    preferred_tutor: 2, loyalty: "new", phone: "+961 70 222 333", email: "ahmad.b@gmail.com",
-    first_visit: "2025-01-10", referral_source: "friend", status: "active", section: "glass",
-    notes: "First time working with glass"
+    id: 2, full_name: "Ahmad Bazzi", gender: "Male", dob: "1991-03-22T00:00:00.000Z", level: "Beginner",
+    preferred_tutor: 2, loyalty: "Low", phone: "+961 70 222 333", email: "ahmad.b@gmail.com",
+    first_visit: "2025-01-10T00:00:00.000Z", referral_source: "Referral", status: "Active", section: "PC",
+    notes: "First time working with glass", created_at: "2025-01-10T10:00:00.000Z", updated_at: "2025-01-10T10:00:00.000Z"
   },
   {
-    id: 3, full_name: "Mia Chamoun", gender: "female", age_group: 22, level: "advanced",
-    preferred_tutor: 1, loyalty: "vip", phone: "+961 70 333 444", email: "mia.c@gmail.com",
-    first_visit: "2023-06-20", referral_source: "website", status: "active", section: "canvas",
-    notes: "Professional artist, teaches occasionally"
+    id: 3, full_name: "Mia Chamoun", gender: "Female", dob: "2004-09-10T00:00:00.000Z", level: "Advanced",
+    preferred_tutor: 1, loyalty: "High", phone: "+961 70 333 444", email: "mia.c@gmail.com",
+    first_visit: "2023-06-20T00:00:00.000Z", referral_source: "SCM", status: "Active", section: "Studio",
+    notes: "Professional artist, teaches occasionally", created_at: "2023-06-20T10:00:00.000Z", updated_at: "2023-06-20T10:00:00.000Z"
   },
   {
-    id: 4, full_name: "Karim Nassar", gender: "male", age_group: 42, level: "intermediate",
-    preferred_tutor: 3, loyalty: "regular", phone: "+961 70 444 555", email: "karim.n@gmail.com",
-    first_visit: "2024-07-01", referral_source: "walk-in", status: "active", section: "pottery",
-    notes: ""
+    id: 4, full_name: "Karim Nassar", gender: "Male", dob: "1984-01-15T00:00:00.000Z", level: "Mid",
+    preferred_tutor: 3, loyalty: "Mid", phone: "+961 70 444 555", email: "karim.n@gmail.com",
+    first_visit: "2024-07-01T00:00:00.000Z", referral_source: "Walk-In", status: "Active", section: "Studio",
+    notes: "", created_at: "2024-07-01T10:00:00.000Z", updated_at: "2024-07-01T10:00:00.000Z"
   },
   {
-    id: 5, full_name: "Lina Harb", gender: "female", age_group: 31, level: "beginner",
-    preferred_tutor: 4, loyalty: "new", phone: "+961 70 555 666", email: "lina.h@gmail.com",
-    first_visit: "2025-02-14", referral_source: "social-media", status: "active", section: "mixed",
-    notes: "Wants to try different art forms"
+    id: 5, full_name: "Lina Harb", gender: "Female", dob: "1995-07-20T00:00:00.000Z", level: "Beginner",
+    preferred_tutor: 4, loyalty: "Low", phone: "+961 70 555 666", email: "lina.h@gmail.com",
+    first_visit: "2025-02-14T00:00:00.000Z", referral_source: "SCM", status: "Active", section: "PC",
+    notes: "Wants to try different art forms", created_at: "2025-02-14T10:00:00.000Z", updated_at: "2025-02-14T10:00:00.000Z"
   },
   {
-    id: 6, full_name: "Tarek Sleiman", gender: "male", age_group: 29, level: "intermediate",
-    preferred_tutor: 2, loyalty: "regular", phone: "+961 70 666 777", email: "tarek.s@gmail.com",
-    first_visit: "2024-09-05", referral_source: "friend", status: "active", section: "glass",
-    notes: "Making stained glass pieces"
+    id: 6, full_name: "Tarek Sleiman", gender: "Male", dob: "1997-11-08T00:00:00.000Z", level: "Mid",
+    preferred_tutor: 2, loyalty: "Mid", phone: "+961 70 666 777", email: "tarek.s@gmail.com",
+    first_visit: "2024-09-05T00:00:00.000Z", referral_source: "Referral", status: "Active", section: "PC",
+    notes: "Making stained glass pieces", created_at: "2024-09-05T10:00:00.000Z", updated_at: "2024-09-05T10:00:00.000Z"
   },
   {
-    id: 7, full_name: "Yasmine Azar", gender: "female", age_group: 26, level: "advanced",
-    preferred_tutor: 3, loyalty: "vip", phone: "+961 70 777 888", email: "yasmine.a@gmail.com",
-    first_visit: "2023-11-12", referral_source: "website", status: "active", section: "pottery",
-    notes: "Specializes in wheel throwing"
+    id: 7, full_name: "Yasmine Azar", gender: "Female", dob: "2000-04-25T00:00:00.000Z", level: "Advanced",
+    preferred_tutor: 3, loyalty: "High", phone: "+961 70 777 888", email: "yasmine.a@gmail.com",
+    first_visit: "2023-11-12T00:00:00.000Z", referral_source: "SCM", status: "Active", section: "Studio",
+    notes: "Specializes in wheel throwing", created_at: "2023-11-12T10:00:00.000Z", updated_at: "2023-11-12T10:00:00.000Z"
   },
   {
-    id: 8, full_name: "Rami Khoury", gender: "male", age_group: 38, level: "beginner",
-    preferred_tutor: 1, loyalty: "new", phone: "+961 70 888 999", email: "rami.k@gmail.com",
-    first_visit: "2025-03-01", referral_source: "walk-in", status: "active", section: "canvas",
-    notes: "Interested in oil painting"
+    id: 8, full_name: "Rami Khoury", gender: "Male", dob: "1988-02-14T00:00:00.000Z", level: "Beginner",
+    preferred_tutor: 1, loyalty: "Low", phone: "+961 70 888 999", email: "rami.k@gmail.com",
+    first_visit: "2025-03-01T00:00:00.000Z", referral_source: "Walk-In", status: "Active", section: "Studio",
+    notes: "Interested in oil painting", created_at: "2025-03-01T10:00:00.000Z", updated_at: "2025-03-01T10:00:00.000Z"
   },
   {
-    id: 9, full_name: "Dina Frem", gender: "female", age_group: 45, level: "intermediate",
-    preferred_tutor: 4, loyalty: "regular", phone: "+961 70 999 000", email: "dina.f@gmail.com",
-    first_visit: "2024-05-22", referral_source: "other", status: "inactive", section: "mixed",
-    notes: "On pause due to travel"
+    id: 9, full_name: "Dina Frem", gender: "Female", dob: "1981-08-30T00:00:00.000Z", level: "Mid",
+    preferred_tutor: 4, loyalty: "Mid", phone: "+961 70 999 000", email: "dina.f@gmail.com",
+    first_visit: "2024-05-22T00:00:00.000Z", referral_source: "Referral", status: "Dormant", section: "PC",
+    notes: "On pause due to travel", created_at: "2024-05-22T10:00:00.000Z", updated_at: "2024-05-22T10:00:00.000Z"
   },
   {
-    id: 10, full_name: "Jad Makarem", gender: "male", age_group: 33, level: "advanced",
-    preferred_tutor: 2, loyalty: "vip", phone: "+961 70 123 456", email: "jad.m@gmail.com",
-    first_visit: "2023-08-30", referral_source: "social-media", status: "active", section: "pottery",
-    notes: "Working on a personal collection"
+    id: 10, full_name: "Jad Makarem", gender: "Male", dob: "1993-06-12T00:00:00.000Z", level: "Advanced",
+    preferred_tutor: 2, loyalty: "High", phone: "+961 70 123 456", email: "jad.m@gmail.com",
+    first_visit: "2023-08-30T00:00:00.000Z", referral_source: "SCM", status: "Active", section: "Studio",
+    notes: "Working on a personal collection", created_at: "2023-08-30T10:00:00.000Z", updated_at: "2023-08-30T10:00:00.000Z"
   },
   {
-    id: 11, full_name: "Nour El Hajj", gender: "female", age_group: 24, level: "beginner",
-    preferred_tutor: 3, loyalty: "new", phone: "+961 70 234 567", email: "nour.h@gmail.com",
-    first_visit: "2025-02-28", referral_source: "friend", status: "active", section: "glass",
-    notes: "Birthday gift experience"
+    id: 11, full_name: "Nour El Hajj", gender: "Female", dob: "2002-12-01T00:00:00.000Z", level: "Beginner",
+    preferred_tutor: 3, loyalty: "Low", phone: "+961 70 234 567", email: "nour.h@gmail.com",
+    first_visit: "2025-02-28T00:00:00.000Z", referral_source: "Referral", status: "Active", section: "PC",
+    notes: "Birthday gift experience", created_at: "2025-02-28T10:00:00.000Z", updated_at: "2025-02-28T10:00:00.000Z"
   },
   {
-    id: 12, full_name: "Ziad Naim", gender: "male", age_group: 50, level: "intermediate",
-    preferred_tutor: 1, loyalty: "regular", phone: "+961 70 345 678", email: "ziad.n@gmail.com",
-    first_visit: "2024-01-15", referral_source: "website", status: "active", section: "canvas",
-    notes: "Retired, comes every week"
+    id: 12, full_name: "Ziad Naim", gender: "Male", dob: "1976-03-18T00:00:00.000Z", level: "Mid",
+    preferred_tutor: 1, loyalty: "Mid", phone: "+961 70 345 678", email: "ziad.n@gmail.com",
+    first_visit: "2024-01-15T00:00:00.000Z", referral_source: "Walk-In", status: "Active", section: "Studio",
+    notes: "Retired, comes every week", created_at: "2024-01-15T10:00:00.000Z", updated_at: "2024-01-15T10:00:00.000Z"
   },
 ]
 
@@ -190,20 +190,21 @@ export function getUserName(userId: number): string {
 }
 
 // Helper to get tutor name by ID
-export function getTutorName(tutorId: number): string {
+export function getTutorName(tutorId: number | null): string {
+  if (tutorId === null) return "None"
   return tutors.find(t => t.id === tutorId)?.full_name ?? "Unknown"
 }
 
 // Stats calculations
 export const stats = {
   totalClients: users.length,
-  activeClients: users.filter(u => u.status === "active").length,
+  activeClients: users.filter(u => u.status === "Active").length,
   totalSessions: sessions.length,
   todaySessions: sessions.filter(s => s.date === "2025-03-13").length,
   activePackages: packages.filter(p => p.status === "active").length,
   totalTutors: tutors.length,
   attendanceRate: Math.round((sessions.filter(s => s.attendance === "present").length / sessions.length) * 100),
-  vipClients: users.filter(u => u.loyalty === "vip").length,
+  vipClients: users.filter(u => u.loyalty === "High").length,
 }
 
 // Chart data

@@ -56,7 +56,7 @@
     "section": "Section",
     "loyalty": "Loyalty",
     "gender": "Gender",
-    "ageGroup": "Age",
+    "dateOfBirth": "Date of Birth",
     "referralSource": "Referral",
     "firstVisit": "First Visit",
     "preferredTutor": "Preferred Tutor",
@@ -66,10 +66,17 @@
     "delete": "Delete",
     "view": "View Details",
     "active": "Active",
-    "inactive": "Inactive",
+    "dormant": "Dormant",
     "allStatuses": "All Statuses",
     "allLevels": "All Levels",
-    "allSections": "All Sections"
+    "allSections": "All Sections",
+    "addUserTitle": "Add New Client",
+    "addUserDescription": "Fill in the details to register a new client.",
+    "pickDate": "Pick a date",
+    "tutorIdPlaceholder": "Tutor ID (optional)",
+    "notesPlaceholder": "Optional notes about this client...",
+    "deleteConfirm": "Delete Client",
+    "deleteWarning": "Are you sure? This action cannot be undone."
   },
   "sessions": {
     "title": "Sessions",
