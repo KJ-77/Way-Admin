@@ -25,17 +25,24 @@ const AppHeader = () => {
     if (path === "/") return [{ label: t("nav.dashboard"), href: "/" }]
 
     const segments = path.split("/").filter(Boolean)
+    const keyMap: Record<string, string> = {
+      users: "nav.users",
+      sessions: "nav.sessions",
+      schedule: "nav.schedule",
+      packages: "nav.packages",
+      tutors: "nav.tutors",
+      accounts: "nav.accounts",
+      settings: "nav.settings",
+    }
+
     return segments.map((segment, index) => {
       const href = "/" + segments.slice(0, index + 1).join("/")
-      const keyMap: Record<string, string> = {
-        users: "nav.users",
-        sessions: "nav.sessions",
-        schedule: "nav.schedule",
-        packages: "nav.packages",
-        tutors: "nav.tutors",
-        accounts: "nav.accounts",
-        settings: "nav.settings",
+
+      // For numeric segments (like user IDs), show "Client Profile" instead
+      if (/^\d+$/.test(segment)) {
+        return { label: "Client Profile", href }
       }
+
       return { label: t(keyMap[segment] ?? segment), href }
     })
   }

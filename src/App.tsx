@@ -11,6 +11,7 @@ import TutorsPage from "@/pages/tutors"
 import SchedulePage from "@/pages/schedule"
 import AccountsPage from "@/pages/accounts"
 import SettingsPage from "@/pages/settings"
+import UserDetailPage from "@/pages/user-detail"
 import NotFound from "@/pages/not-found"
 
 const App = () => {
@@ -22,6 +23,7 @@ const App = () => {
             <Routes>
               <Route path="/" element={<Dashboard />} />
               <Route path="/users" element={<UsersPage />} />
+              <Route path="/users/:id" element={<UserDetailPage />} />
               <Route path="/sessions" element={<SessionsPage />} />
               <Route path="/packages" element={<PackagesPage />} />
               <Route path="/tutors" element={<TutorsPage />} />

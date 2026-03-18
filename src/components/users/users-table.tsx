@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { useNavigate } from "react-router-dom"
 import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 import {
@@ -53,6 +54,7 @@ const loyaltyColors: Record<string, string> = {
 
 const UsersTable = ({ users, loading, error, onRefetch }: UsersTableProps) => {
   const { t } = useTranslation()
+  const navigate = useNavigate()
   const [search, setSearch] = useState("")
   const [isAddOpen, setIsAddOpen] = useState(false)
   const [statusFilter, setStatusFilter] = useState<UserStatus | "all">("all")
@@ -196,7 +198,7 @@ const UsersTable = ({ users, loading, error, onRefetch }: UsersTableProps) => {
                     filteredUsers.map((user) => (
                       <ContextMenu key={user.id}>
                         <ContextMenuTrigger asChild>
-                          <TableRow className="cursor-context-menu">
+                          <TableRow className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/users/${user.id}`)}>
                             <TableCell>
                               <div className="flex items-center gap-3">
                                 <Avatar className="h-8 w-8">
@@ -237,7 +239,7 @@ const UsersTable = ({ users, loading, error, onRefetch }: UsersTableProps) => {
                           </TableRow>
                         </ContextMenuTrigger>
                         <ContextMenuContent>
-                          <ContextMenuItem>
+                          <ContextMenuItem onClick={() => navigate(`/users/${user.id}`)}>
                             <Eye className="me-2 h-4 w-4" />
                             {t("users.view")}
                           </ContextMenuItem>
