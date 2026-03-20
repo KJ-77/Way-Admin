@@ -1,4 +1,4 @@
-import type { User, Package, Session, Tutor, ActivityItem, ScheduleEvent, AdminAccount } from "@/types"
+import type { User, Package, Session, Tutor, ActivityItem, ScheduleEvent } from "@/types"
 
 export const tutors: Tutor[] = [
   { id: 1, full_name: "Layla Khoury", email: "layla@way-studio.com", phone: "+961 71 234 567" },
@@ -272,12 +272,3 @@ export const scheduleEvents: ScheduleEvent[] = [
   { id: 14, date: "2025-03-15", startTime: "14:00", duration: 120, title: "Glass Workshop", tutorId: 2, classType: "glass" },
 ]
 
-export const adminAccounts: AdminAccount[] = [
-  { id: 1, full_name: "Tarek Ramadan", email: "tarek@way-studio.com", phone: "+961 70 100 200", role: "admin", status: "active", created_at: "2023-01-01" },
-  { id: 2, full_name: "Layla Khoury", email: "layla@way-studio.com", phone: "+961 71 234 567", role: "tutor", status: "active", created_at: "2023-06-15" },
-  { id: 3, full_name: "Omar Haddad", email: "omar@way-studio.com", phone: "+961 71 345 678", role: "tutor", status: "active", created_at: "2023-06-15" },
-  { id: 4, full_name: "Nadia Saab", email: "nadia@way-studio.com", phone: "+961 71 456 789", role: "tutor", status: "active", created_at: "2024-01-10" },
-  { id: 5, full_name: "Rami Farah", email: "rami@way-studio.com", phone: "+961 71 567 890", role: "tutor", status: "active", created_at: "2024-03-20" },
-  { id: 6, full_name: "Hana Darwish", email: "hana@way-studio.com", phone: "+961 70 300 400", role: "receptionist", status: "active", created_at: "2024-05-01" },
-  { id: 7, full_name: "Fadi Moussawi", email: "fadi@way-studio.com", phone: "+961 70 500 600", role: "admin", status: "suspended", created_at: "2023-01-01" },
-]

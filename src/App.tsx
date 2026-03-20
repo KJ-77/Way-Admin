@@ -2,7 +2,10 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/sonner"
 import { TooltipProvider } from "@/components/ui/tooltip"
+import { AuthProvider } from "@/contexts/auth-context"
+import ProtectedRoute from "@/components/auth/protected-route"
 import AppLayout from "@/components/layout/app-layout"
+import LoginPage from "@/pages/login"
 import Dashboard from "@/pages/dashboard"
 import UsersPage from "@/pages/users"
 import SessionsPage from "@/pages/sessions"
@@ -18,22 +21,41 @@ const App = () => {
   return (
     <ThemeProvider defaultTheme="dark" storageKey="way-admin-theme">
       <TooltipProvider>
-        <Router>
-          <AppLayout>
+        <AuthProvider>
+          <Router>
             <Routes>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/users" element={<UsersPage />} />
-              <Route path="/users/:id" element={<UserDetailPage />} />
-              <Route path="/sessions" element={<SessionsPage />} />
-              <Route path="/packages" element={<PackagesPage />} />
-              <Route path="/tutors" element={<TutorsPage />} />
-              <Route path="/schedule" element={<SchedulePage />} />
-              <Route path="/accounts" element={<AccountsPage />} />
-              <Route path="/settings" element={<SettingsPage />} />
-              <Route path="*" element={<NotFound />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route
+                path="/*"
+                element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <Routes>
+                        <Route path="/" element={<Dashboard />} />
+                        <Route path="/users" element={<UsersPage />} />
+                        <Route path="/users/:id" element={<UserDetailPage />} />
+                        <Route path="/sessions" element={<SessionsPage />} />
+                        <Route path="/packages" element={<PackagesPage />} />
+                        <Route path="/tutors" element={<TutorsPage />} />
+                        <Route path="/schedule" element={<SchedulePage />} />
+                        <Route
+                          path="/accounts"
+                          element={
+                            <ProtectedRoute allowedRoles={["admin"]}>
+                              <AccountsPage />
+                            </ProtectedRoute>
+                          }
+                        />
+                        <Route path="/settings" element={<SettingsPage />} />
+                        <Route path="*" element={<NotFound />} />
+                      </Routes>
+                    </AppLayout>
+                  </ProtectedRoute>
+                }
+              />
             </Routes>
-          </AppLayout>
-        </Router>
+          </Router>
+        </AuthProvider>
       </TooltipProvider>
       <Toaster />
     </ThemeProvider>

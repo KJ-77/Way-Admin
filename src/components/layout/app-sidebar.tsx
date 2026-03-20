@@ -1,5 +1,6 @@
-import { useLocation, Link } from "react-router-dom"
+import { useLocation, Link, useNavigate } from "react-router-dom"
 import { useTranslation } from "react-i18next"
+import { useAuth } from "@/contexts/auth-context"
 import {
   LayoutDashboard,
   Users,
@@ -38,6 +39,23 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 const AppSidebar = () => {
   const { t, i18n } = useTranslation()
   const location = useLocation()
+  const navigate = useNavigate()
+  const { user, logout } = useAuth()
+
+  const isAdmin = user?.groups.includes("admin")
+
+  const handleLogout = () => {
+    logout()
+    navigate("/login")
+  }
+
+  const initials = user?.name
+    ? user.name.split(" ").map((n) => n[0]).join("").toUpperCase()
+    : "?"
+
+  const displayRole = user?.groups[0]
+    ? user.groups[0].replace("-", " ").replace(/\b\w/g, (c) => c.toUpperCase())
+    : ""
 
   const navItems = [
     { title: t("nav.dashboard"), url: "/", icon: LayoutDashboard },
@@ -99,19 +117,21 @@ const AppSidebar = () => {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  isActive={isActive("/accounts")}
-                  tooltip={t("nav.accounts")}
-                  className="transition-all duration-200"
-                >
-                  <Link to="/accounts">
-                    <UserCog className="h-4 w-4" />
-                    <span>{t("nav.accounts")}</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
+              {isAdmin && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive("/accounts")}
+                    tooltip={t("nav.accounts")}
+                    className="transition-all duration-200"
+                  >
+                    <Link to="/accounts">
+                      <UserCog className="h-4 w-4" />
+                      <span>{t("nav.accounts")}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
               <SidebarMenuItem>
                 <SidebarMenuButton
                   asChild
@@ -141,12 +161,12 @@ const AppSidebar = () => {
                 >
                   <Avatar className="h-8 w-8">
                     <AvatarFallback className="bg-primary/20 text-primary text-xs font-semibold">
-                      TR
+                      {initials}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex flex-col gap-0.5 leading-none group-data-[collapsible=icon]:hidden">
-                    <span className="text-sm font-medium">Tarek Ramadan</span>
-                    <span className="text-[10px] text-muted-foreground">Admin</span>
+                    <span className="text-sm font-medium">{user?.name || "User"}</span>
+                    <span className="text-[10px] text-muted-foreground">{displayRole}</span>
                   </div>
                   <ChevronUp className="ms-auto h-4 w-4 group-data-[collapsible=icon]:hidden" />
                 </SidebarMenuButton>
@@ -162,9 +182,12 @@ const AppSidebar = () => {
                   {t("nav.settings")}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="text-destructive focus:text-destructive">
+                <DropdownMenuItem
+                  className="text-destructive focus:text-destructive"
+                  onClick={handleLogout}
+                >
                   <LogOut className="me-2 h-4 w-4" />
-                  Logout
+                  {t("auth.logout")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

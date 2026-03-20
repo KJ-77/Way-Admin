@@ -81,15 +81,14 @@ export interface ScheduleEvent {
   classType: ClassType
 }
 
-export type AccountRole = "admin" | "tutor" | "receptionist"
-export type AccountStatus = "active" | "suspended"
+export type AccountRole = "admin" | "studio-manager"
 
 export interface AdminAccount {
-  id: number
+  id: string // cognito_sub
   full_name: string
   email: string
-  phone: string
+  phone: string | null
   role: AccountRole
-  status: AccountStatus
   created_at: string
+  updated_at: string
 }

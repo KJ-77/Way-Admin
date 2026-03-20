@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from "react"
+import { apiFetch } from "@/lib/api"
 import type { User } from "@/types"
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
 export function useUsers() {
   const [users, setUsers] = useState<User[]>([])
@@ -12,7 +11,7 @@ export function useUsers() {
     try {
       setLoading(true)
       setError(null)
-      const response = await fetch(`${API_BASE_URL}/users`)
+      const response = await apiFetch("/users")
       if (!response.ok) throw new Error(`Failed to fetch users: ${response.status}`)
       const data = await response.json()
       setUsers(data)

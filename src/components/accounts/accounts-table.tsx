@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
-import { Search, Plus, MoreHorizontal, Pencil, Trash2 } from "lucide-react"
+import { toast } from "sonner"
+import { Search, Plus, MoreHorizontal, Pencil, Trash2, Loader2, AlertCircle, RefreshCw } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -35,36 +36,46 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { adminAccounts as initialAccounts } from "@/data/mock-data"
-import type { AdminAccount, AccountRole, AccountStatus } from "@/types"
+import { useAccounts, type DbSyncError } from "@/hooks/use-accounts"
+import type { AdminAccount, AccountRole } from "@/types"
 
-const emptyForm = {
+interface FormData {
+  full_name: string
+  email: string
+  phone: string
+  role: AccountRole
+}
+
+const emptyForm: FormData = {
   full_name: "",
   email: "",
   phone: "",
-  role: "admin" as AccountRole,
-  status: "active" as AccountStatus,
+  role: "admin",
 }
 
 const AccountsTable = () => {
   const { t } = useTranslation()
-  const [accounts, setAccounts] = useState<AdminAccount[]>(initialAccounts)
+  const { accounts, loading, error, refetch, createAccount, updateAccount, deleteAccount, syncAccountToDb } = useAccounts()
   const [search, setSearch] = useState("")
   const [roleFilter, setRoleFilter] = useState<string>("all")
-  const [statusFilter, setStatusFilter] = useState<string>("all")
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
+  const [isSyncDialogOpen, setIsSyncDialogOpen] = useState(false)
   const [editingAccount, setEditingAccount] = useState<AdminAccount | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<AdminAccount | null>(null)
-  const [formData, setFormData] = useState(emptyForm)
+  const [formData, setFormData] = useState<FormData>(emptyForm)
+  const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [syncing, setSyncing] = useState(false)
+  // Holds account info from a failed DB sync, so the admin can retry
+  const [unsyncedAccount, setUnsyncedAccount] = useState<DbSyncError["account"] | null>(null)
 
   const filteredAccounts = accounts.filter(a => {
     const matchesSearch =
       a.full_name.toLowerCase().includes(search.toLowerCase()) ||
       a.email.toLowerCase().includes(search.toLowerCase())
     const matchesRole = roleFilter === "all" || a.role === roleFilter
-    const matchesStatus = statusFilter === "all" || a.status === statusFilter
-    return matchesSearch && matchesRole && matchesStatus
+    return matchesSearch && matchesRole
   })
 
   const openCreate = () => {
@@ -78,9 +89,8 @@ const AccountsTable = () => {
     setFormData({
       full_name: account.full_name,
       email: account.email,
-      phone: account.phone,
+      phone: account.phone || "",
       role: account.role,
-      status: account.status,
     })
     setIsFormOpen(true)
   }
@@ -90,37 +100,78 @@ const AccountsTable = () => {
     setIsDeleteOpen(true)
   }
 
-  const handleSave = () => {
-    if (editingAccount) {
-      setAccounts(prev =>
-        prev.map(a =>
-          a.id === editingAccount.id ? { ...a, ...formData } : a
-        )
-      )
-    } else {
-      const newAccount: AdminAccount = {
-        id: Math.max(...accounts.map(a => a.id)) + 1,
-        ...formData,
-        created_at: new Date().toISOString().split("T")[0],
+  const handleSave = async () => {
+    setSaving(true)
+    try {
+      if (editingAccount) {
+        await updateAccount(editingAccount.id, {
+          full_name: formData.full_name,
+          phone: formData.phone || undefined,
+          role: formData.role,
+        })
+        toast.success(t("accounts.updateSuccess"))
+      } else {
+        await createAccount({
+          email: formData.email,
+          full_name: formData.full_name,
+          phone: formData.phone || undefined,
+          role: formData.role,
+        })
+        toast.success(t("accounts.createSuccess"))
       }
-      setAccounts(prev => [...prev, newAccount])
+      setIsFormOpen(false)
+      refetch()
+    } catch (err) {
+      // Check if this is a partial success (Cognito OK, DB failed)
+      if (typeof err === "object" && err !== null && "type" in err && (err as DbSyncError).type === "db_sync_failed") {
+        const syncErr = err as DbSyncError
+        setUnsyncedAccount(syncErr.account)
+        setIsFormOpen(false)
+        setIsSyncDialogOpen(true)
+      } else {
+        toast.error(err instanceof Error ? err.message : t("accounts.operationFailed"))
+      }
+    } finally {
+      setSaving(false)
     }
-    setIsFormOpen(false)
   }
 
-  const handleDelete = () => {
-    if (deleteTarget) {
-      setAccounts(prev => prev.filter(a => a.id !== deleteTarget.id))
+  const handleSyncRetry = async () => {
+    if (!unsyncedAccount) return
+    setSyncing(true)
+    try {
+      await syncAccountToDb(unsyncedAccount)
+      toast.success(t("accounts.syncSuccess"))
+      setIsSyncDialogOpen(false)
+      setUnsyncedAccount(null)
+      refetch()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t("accounts.syncFailed"))
+    } finally {
+      setSyncing(false)
     }
-    setIsDeleteOpen(false)
-    setDeleteTarget(null)
+  }
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return
+    setDeleting(true)
+    try {
+      await deleteAccount(deleteTarget.id)
+      setIsDeleteOpen(false)
+      setDeleteTarget(null)
+      refetch()
+      toast.success(t("accounts.deleteSuccess"))
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t("accounts.deleteFailed"))
+    } finally {
+      setDeleting(false)
+    }
   }
 
   const roleBadgeVariant = (role: AccountRole) => {
     switch (role) {
       case "admin": return "default" as const
-      case "tutor": return "secondary" as const
-      case "receptionist": return "outline" as const
+      case "studio-manager": return "secondary" as const
     }
   }
 
@@ -141,24 +192,13 @@ const AccountsTable = () => {
             </div>
             <div className="flex items-center gap-2 flex-wrap">
               <Select value={roleFilter} onValueChange={setRoleFilter}>
-                <SelectTrigger className="w-[140px]">
+                <SelectTrigger className="w-[160px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">{t("accounts.allRoles")}</SelectItem>
                   <SelectItem value="admin">{t("accounts.admin")}</SelectItem>
-                  <SelectItem value="tutor">{t("accounts.tutor")}</SelectItem>
-                  <SelectItem value="receptionist">{t("accounts.receptionist")}</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[140px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{t("accounts.allStatuses")}</SelectItem>
-                  <SelectItem value="active">{t("accounts.active")}</SelectItem>
-                  <SelectItem value="suspended">{t("accounts.suspended")}</SelectItem>
+                  <SelectItem value="studio-manager">{t("accounts.studio-manager")}</SelectItem>
                 </SelectContent>
               </Select>
               <Button onClick={openCreate}>
@@ -168,83 +208,82 @@ const AccountsTable = () => {
             </div>
           </div>
 
-          {/* Table */}
-          <div className="rounded-md border overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t("accounts.name")}</TableHead>
-                  <TableHead>{t("accounts.email")}</TableHead>
-                  <TableHead className="hidden md:table-cell">{t("accounts.phone")}</TableHead>
-                  <TableHead>{t("accounts.role")}</TableHead>
-                  <TableHead>{t("accounts.status")}</TableHead>
-                  <TableHead className="hidden lg:table-cell">{t("accounts.createdAt")}</TableHead>
-                  <TableHead className="w-10" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredAccounts.length === 0 ? (
+          {/* Content */}
+          {error ? (
+            <div className="flex flex-col items-center justify-center py-12 text-destructive gap-2">
+              <AlertCircle className="h-8 w-8" />
+              <p className="text-sm font-medium">Failed to load accounts</p>
+              <p className="text-xs text-muted-foreground">{error}</p>
+            </div>
+          ) : loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <div className="rounded-md border overflow-x-auto">
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                      {t("common.noResults")}
-                    </TableCell>
+                    <TableHead>{t("accounts.name")}</TableHead>
+                    <TableHead>{t("accounts.email")}</TableHead>
+                    <TableHead className="hidden md:table-cell">{t("accounts.phone")}</TableHead>
+                    <TableHead>{t("accounts.role")}</TableHead>
+                    <TableHead className="hidden lg:table-cell">{t("accounts.createdAt")}</TableHead>
+                    <TableHead className="w-10" />
                   </TableRow>
-                ) : (
-                  filteredAccounts.map(account => (
-                    <TableRow key={account.id}>
-                      <TableCell className="font-medium">{account.full_name}</TableCell>
-                      <TableCell>{account.email}</TableCell>
-                      <TableCell className="hidden md:table-cell" dir="ltr">
-                        {account.phone}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={roleBadgeVariant(account.role)}>
-                          {t(`accounts.${account.role}`)}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={account.status === "active" ? "default" : "destructive"}
-                          className={
-                            account.status === "active"
-                              ? "bg-green-500/10 text-green-500 hover:bg-green-500/20"
-                              : ""
-                          }
-                        >
-                          {t(`accounts.${account.status}`)}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="hidden lg:table-cell text-muted-foreground">
-                        {account.created_at}
-                      </TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => openEdit(account)}>
-                              <Pencil className="me-2 h-4 w-4" />
-                              {t("common.edit")}
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => openDelete(account)}
-                              className="text-destructive focus:text-destructive"
-                            >
-                              <Trash2 className="me-2 h-4 w-4" />
-                              {t("common.delete")}
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                </TableHeader>
+                <TableBody>
+                  {filteredAccounts.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                        {t("common.noResults")}
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
+                  ) : (
+                    filteredAccounts.map(account => (
+                      <TableRow key={account.id}>
+                        <TableCell className="font-medium">{account.full_name}</TableCell>
+                        <TableCell>{account.email}</TableCell>
+                        <TableCell className="hidden md:table-cell" dir="ltr">
+                          {account.phone || "-"}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={roleBadgeVariant(account.role)}>
+                            {t(`accounts.${account.role}`)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="hidden lg:table-cell text-muted-foreground">
+                          {new Date(account.created_at).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => openEdit(account)}>
+                                <Pencil className="me-2 h-4 w-4" />
+                                {t("common.edit")}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => openDelete(account)}
+                                className="text-destructive focus:text-destructive"
+                              >
+                                <Trash2 className="me-2 h-4 w-4" />
+                                {t("common.delete")}
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -270,6 +309,7 @@ const AccountsTable = () => {
                 type="email"
                 value={formData.email}
                 onChange={e => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                disabled={!!editingAccount}
               />
             </div>
             <div className="grid gap-2">
@@ -279,46 +319,62 @@ const AccountsTable = () => {
                 onChange={e => setFormData(prev => ({ ...prev, phone: e.target.value }))}
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <Label>{t("accounts.role")}</Label>
-                <Select
-                  value={formData.role}
-                  onValueChange={val => setFormData(prev => ({ ...prev, role: val as AccountRole }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="admin">{t("accounts.admin")}</SelectItem>
-                    <SelectItem value="tutor">{t("accounts.tutor")}</SelectItem>
-                    <SelectItem value="receptionist">{t("accounts.receptionist")}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid gap-2">
-                <Label>{t("accounts.status")}</Label>
-                <Select
-                  value={formData.status}
-                  onValueChange={val => setFormData(prev => ({ ...prev, status: val as AccountStatus }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="active">{t("accounts.active")}</SelectItem>
-                    <SelectItem value="suspended">{t("accounts.suspended")}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="grid gap-2">
+              <Label>{t("accounts.role")}</Label>
+              <Select
+                value={formData.role}
+                onValueChange={val => setFormData(prev => ({ ...prev, role: val as AccountRole }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="admin">{t("accounts.admin")}</SelectItem>
+                  <SelectItem value="studio-manager">{t("accounts.studio-manager")}</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsFormOpen(false)}>
+            <Button variant="outline" onClick={() => setIsFormOpen(false)} disabled={saving}>
               {t("common.cancel")}
             </Button>
-            <Button onClick={handleSave} disabled={!formData.full_name || !formData.email}>
+            <Button onClick={handleSave} disabled={!formData.full_name || !formData.email || saving}>
+              {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {editingAccount ? t("common.save") : t("common.create")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* DB Sync Failed Dialog — shows when Cognito succeeded but DB insert failed */}
+      <Dialog open={isSyncDialogOpen} onOpenChange={setIsSyncDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-amber-500">
+              <AlertCircle className="h-5 w-5" />
+              {t("accounts.syncFailedTitle")}
+            </DialogTitle>
+            <DialogDescription>{t("accounts.syncFailedDescription")}</DialogDescription>
+          </DialogHeader>
+          {unsyncedAccount && (
+            <div className="rounded-md border p-3 space-y-1 text-sm bg-muted/50">
+              <p><span className="text-muted-foreground">{t("accounts.name")}:</span> {unsyncedAccount.full_name}</p>
+              <p><span className="text-muted-foreground">{t("accounts.email")}:</span> {unsyncedAccount.email}</p>
+              {unsyncedAccount.phone && (
+                <p><span className="text-muted-foreground">{t("accounts.phone")}:</span> {unsyncedAccount.phone}</p>
+              )}
+              <p><span className="text-muted-foreground">{t("accounts.role")}:</span> {t(`accounts.${unsyncedAccount.role}`)}</p>
+              <p className="text-xs text-muted-foreground pt-1">ID: {unsyncedAccount.id}</p>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsSyncDialogOpen(false)} disabled={syncing}>
+              {t("common.close")}
+            </Button>
+            <Button onClick={handleSyncRetry} disabled={syncing}>
+              {syncing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+              {t("accounts.syncToDb")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -337,10 +393,11 @@ const AccountsTable = () => {
             </p>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>
+            <Button variant="outline" onClick={() => setIsDeleteOpen(false)} disabled={deleting}>
               {t("common.cancel")}
             </Button>
-            <Button variant="destructive" onClick={handleDelete}>
+            <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
+              {deleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {t("common.delete")}
             </Button>
           </DialogFooter>

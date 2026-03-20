@@ -23,10 +23,9 @@ import {
 } from "@/components/ui/dialog"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import AddUserDialog from "@/components/users/add-user-dialog"
+import { apiFetch } from "@/lib/api"
 import { getTutorName } from "@/data/mock-data"
 import type { User, UserStatus, Level, Section } from "@/types"
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
 interface UsersTableProps {
   users: User[]
@@ -80,7 +79,7 @@ const UsersTable = ({ users, loading, error, onRefetch }: UsersTableProps) => {
     setDeleting(true)
 
     try {
-      const response = await fetch(`${API_BASE_URL}/users/${deleteTarget.id}`, {
+      const response = await apiFetch(`/users/${deleteTarget.id}`, {
         method: "DELETE",
       })
 

@@ -18,9 +18,8 @@ import {
   Popover, PopoverContent, PopoverTrigger,
 } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
+import { apiFetch } from "@/lib/api"
 import type { Gender, Level, Loyalty, ReferralSource, UserStatus, Section } from "@/types"
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
 interface AddUserDialogProps {
   open: boolean
@@ -114,9 +113,8 @@ const AddUserDialog = ({ open, onOpenChange, onSuccess }: AddUserDialogProps) =>
         body.notes = formData.notes.trim()
       }
 
-      const response = await fetch(`${API_BASE_URL}/users`, {
+      const response = await apiFetch("/users", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       })
 
