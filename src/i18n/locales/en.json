@@ -198,7 +198,8 @@
     "syncFailedDescription": "The account was created in Cognito but could not be saved to the database. You can retry syncing below.",
     "syncToDb": "Sync to Database",
     "syncSuccess": "Account synced to database successfully",
-    "syncFailed": "Failed to sync account to database"
+    "syncFailed": "Failed to sync account to database",
+    "phoneHint": "E.164 format: + followed by country code and number (e.g. +1234567890)"
   },
   "common": {
     "save": "Save",

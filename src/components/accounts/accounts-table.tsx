@@ -317,7 +317,11 @@ const AccountsTable = () => {
               <Input
                 value={formData.phone}
                 onChange={e => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                placeholder="+1234567890"
               />
+              <p className="text-xs text-muted-foreground">
+                {t("accounts.phoneHint")}
+              </p>
             </div>
             <div className="grid gap-2">
               <Label>{t("accounts.role")}</Label>
