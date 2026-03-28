@@ -32,7 +32,7 @@ const UsersStats = ({ users, loading }: UsersStatsProps) => {
     },
     {
       label: "New This Month",
-      value: users.filter(u => u.first_visit >= firstOfMonth).length,
+      value: users.filter(u => u.first_visit != null && u.first_visit >= firstOfMonth).length,
       icon: UserPlus,
       color: "text-chart-3 bg-chart-3/10",
     },

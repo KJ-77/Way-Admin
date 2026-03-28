@@ -1,24 +1,24 @@
 import { Package, CheckCircle, AlertTriangle, XCircle } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
-import { packages } from "@/data/mock-data"
+import { userPackages } from "@/data/mock-data"
 
-const PackagesStats = () => {
+const SubscriptionsStats = () => {
   const statItems = [
     {
-      label: "Total Packages",
-      value: packages.length,
+      label: "Total Subscriptions",
+      value: userPackages.length,
       icon: Package,
       color: "text-chart-1 bg-chart-1/10",
     },
     {
       label: "Active",
-      value: packages.filter(p => p.status === "active").length,
+      value: userPackages.filter(p => p.status === "active").length,
       icon: CheckCircle,
       color: "text-emerald-500 bg-emerald-500/10",
     },
     {
       label: "Expiring Soon",
-      value: packages.filter(p => {
+      value: userPackages.filter(p => {
         const expiry = new Date(p.expiry_date)
         const now = new Date("2025-03-13")
         const diff = expiry.getTime() - now.getTime()
@@ -29,7 +29,7 @@ const PackagesStats = () => {
     },
     {
       label: "Expired",
-      value: packages.filter(p => p.status === "expired").length,
+      value: userPackages.filter(p => p.status === "expired").length,
       icon: XCircle,
       color: "text-destructive bg-destructive/10",
     },
@@ -54,4 +54,4 @@ const PackagesStats = () => {
   )
 }
 
-export default PackagesStats
+export default SubscriptionsStats

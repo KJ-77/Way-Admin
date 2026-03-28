@@ -10,6 +10,7 @@ import Dashboard from "@/pages/dashboard"
 import UsersPage from "@/pages/users"
 import SessionsPage from "@/pages/sessions"
 import PackagesPage from "@/pages/packages"
+import SubscriptionsPage from "@/pages/subscriptions"
 import TutorsPage from "@/pages/tutors"
 import SchedulePage from "@/pages/schedule"
 import AccountsPage from "@/pages/accounts"
@@ -36,6 +37,7 @@ const App = () => {
                         <Route path="/users/:id" element={<UserDetailPage />} />
                         <Route path="/sessions" element={<SessionsPage />} />
                         <Route path="/packages" element={<PackagesPage />} />
+                        <Route path="/subscriptions" element={<SubscriptionsPage />} />
                         <Route path="/tutors" element={<TutorsPage />} />
                         <Route path="/schedule" element={<SchedulePage />} />
                         <Route

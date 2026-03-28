@@ -33,7 +33,9 @@ interface UserProfileHeaderProps {
 const UserProfileHeader = ({ user }: UserProfileHeaderProps) => {
   const navigate = useNavigate()
   const initials = user.full_name.split(" ").map(n => n[0]).join("")
-  const memberSince = format(new Date(user.first_visit), "MMMM yyyy")
+  const memberSince = user.first_visit
+    ? format(new Date(user.first_visit), "MMMM yyyy")
+    : null
 
   return (
     <Card>
@@ -56,29 +58,35 @@ const UserProfileHeader = ({ user }: UserProfileHeaderProps) => {
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
               <h1 className="text-2xl font-bold tracking-tight">{user.full_name}</h1>
               <div className="flex gap-2 flex-wrap">
-                <Badge variant="outline" className={statusColors[user.status]}>{user.status}</Badge>
-                <Badge variant="outline" className={levelColors[user.level]}>{user.level}</Badge>
-                <Badge variant="outline" className={loyaltyColors[user.loyalty]}>{user.loyalty} Loyalty</Badge>
+                {user.status && <Badge variant="outline" className={statusColors[user.status]}>{user.status}</Badge>}
+                {user.level && <Badge variant="outline" className={levelColors[user.level]}>{user.level}</Badge>}
+                {user.loyalty && <Badge variant="outline" className={loyaltyColors[user.loyalty]}>{user.loyalty} Loyalty</Badge>}
               </div>
             </div>
 
             <div className="flex flex-col gap-1.5 text-sm text-muted-foreground sm:flex-row sm:gap-4 sm:flex-wrap">
-              <span className="flex items-center gap-1.5">
-                <Mail className="h-3.5 w-3.5" />
-                {user.email}
-              </span>
+              {user.email && (
+                <span className="flex items-center gap-1.5">
+                  <Mail className="h-3.5 w-3.5" />
+                  {user.email}
+                </span>
+              )}
               <span className="flex items-center gap-1.5">
                 <Phone className="h-3.5 w-3.5" />
                 {user.phone}
               </span>
-              <span className="flex items-center gap-1.5">
-                <MapPin className="h-3.5 w-3.5" />
-                {user.section} Section
-              </span>
-              <span className="flex items-center gap-1.5">
-                <Calendar className="h-3.5 w-3.5" />
-                Member since {memberSince}
-              </span>
+              {user.section && (
+                <span className="flex items-center gap-1.5">
+                  <MapPin className="h-3.5 w-3.5" />
+                  {user.section} Section
+                </span>
+              )}
+              {memberSince && (
+                <span className="flex items-center gap-1.5">
+                  <Calendar className="h-3.5 w-3.5" />
+                  Member since {memberSince}
+                </span>
+              )}
             </div>
           </div>
         </div>

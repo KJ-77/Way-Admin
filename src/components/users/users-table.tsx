@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom"
 import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 import {
-  Search, UserPlus, Filter, Eye, Pencil, Trash2, Loader2, AlertCircle,
+  Search, UserPlus, Filter, Eye, Pencil, Trash2, Loader2, AlertCircle, MoreHorizontal,
 } from "lucide-react"
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -16,22 +16,25 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select"
 import {
-  ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuTrigger,
-} from "@/components/ui/context-menu"
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import AddUserDialog from "@/components/users/add-user-dialog"
-import { apiFetch } from "@/lib/api"
 import { getTutorName } from "@/data/mock-data"
 import type { User, UserStatus, Level, Section } from "@/types"
+import type { CreateUserResponse } from "@/hooks/use-users"
 
 interface UsersTableProps {
   users: User[]
   loading: boolean
   error: string | null
   onRefetch: () => void
+  onCreateUser: (body: Record<string, unknown>) => Promise<CreateUserResponse>
+  onUpdateUser: (id: string, body: Record<string, unknown>) => Promise<User>
+  onDeleteUser: (id: string) => Promise<void>
 }
 
 const statusColors: Record<string, string> = {
@@ -51,7 +54,7 @@ const loyaltyColors: Record<string, string> = {
   High: "bg-amber-500/15 text-amber-400 border-amber-500/30",
 }
 
-const UsersTable = ({ users, loading, error, onRefetch }: UsersTableProps) => {
+const UsersTable = ({ users, loading, error, onRefetch, onCreateUser, onUpdateUser, onDeleteUser }: UsersTableProps) => {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const [search, setSearch] = useState("")
@@ -60,13 +63,16 @@ const UsersTable = ({ users, loading, error, onRefetch }: UsersTableProps) => {
   const [levelFilter, setLevelFilter] = useState<Level | "all">("all")
   const [sectionFilter, setSectionFilter] = useState<Section | "all">("all")
 
+  // Edit mode — when set, the AddUserDialog opens in edit mode
+  const [editTarget, setEditTarget] = useState<User | null>(null)
+
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null)
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
   const [deleting, setDeleting] = useState(false)
 
   const filteredUsers = users.filter(user => {
     const matchesSearch = user.full_name.toLowerCase().includes(search.toLowerCase()) ||
-      user.email.toLowerCase().includes(search.toLowerCase()) ||
+      (user.email?.toLowerCase().includes(search.toLowerCase()) ?? false) ||
       user.phone.includes(search)
     const matchesStatus = statusFilter === "all" || user.status === statusFilter
     const matchesLevel = levelFilter === "all" || user.level === levelFilter
@@ -74,20 +80,22 @@ const UsersTable = ({ users, loading, error, onRefetch }: UsersTableProps) => {
     return matchesSearch && matchesStatus && matchesLevel && matchesSection
   })
 
+  const openEdit = (user: User) => {
+    setEditTarget(user)
+    setIsAddOpen(true)
+  }
+
+  const openCreate = () => {
+    setEditTarget(null)
+    setIsAddOpen(true)
+  }
+
   const handleDelete = async () => {
     if (!deleteTarget) return
     setDeleting(true)
 
     try {
-      const response = await apiFetch(`/users/${deleteTarget.id}`, {
-        method: "DELETE",
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => null)
-        throw new Error(errorData?.message || errorData?.error || `Failed to delete client: ${response.status}`)
-      }
-
+      await onDeleteUser(deleteTarget.id)
       setIsDeleteOpen(false)
       setDeleteTarget(null)
       onRefetch()
@@ -108,7 +116,7 @@ const UsersTable = ({ users, loading, error, onRefetch }: UsersTableProps) => {
             <CardTitle>{t("users.title")}</CardTitle>
             <CardDescription>{t("users.description")}</CardDescription>
           </div>
-          <Button className="gap-2" onClick={() => setIsAddOpen(true)}>
+          <Button className="gap-2" onClick={openCreate}>
             <UserPlus className="h-4 w-4" />
             {t("users.addUser")}
           </Button>
@@ -184,78 +192,90 @@ const UsersTable = ({ users, loading, error, onRefetch }: UsersTableProps) => {
                     <TableHead className="hidden lg:table-cell">{t("users.loyalty")}</TableHead>
                     <TableHead>{t("users.status")}</TableHead>
                     <TableHead className="hidden lg:table-cell">{t("users.preferredTutor")}</TableHead>
+                    <TableHead className="w-10" />
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredUsers.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                      <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
                         {t("common.noResults")}
                       </TableCell>
                     </TableRow>
                   ) : (
                     filteredUsers.map((user) => (
-                      <ContextMenu key={user.id}>
-                        <ContextMenuTrigger asChild>
-                          <TableRow className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/users/${user.id}`)}>
-                            <TableCell>
-                              <div className="flex items-center gap-3">
-                                <Avatar className="h-8 w-8">
-                                  <AvatarFallback className="text-xs bg-primary/10 text-primary">
-                                    {user.full_name.split(" ").map(n => n[0]).join("")}
-                                  </AvatarFallback>
-                                </Avatar>
-                                <div>
-                                  <p className="font-medium text-sm">{user.full_name}</p>
-                                  <p className="text-xs text-muted-foreground md:hidden">{user.email}</p>
-                                </div>
-                              </div>
-                            </TableCell>
-                            <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
-                              {user.email}
-                            </TableCell>
-                            <TableCell className="hidden sm:table-cell">
-                              <span className="text-sm">{user.section}</span>
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant="outline" className={levelColors[user.level]}>
-                                {user.level}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="hidden lg:table-cell">
-                              <Badge variant="outline" className={loyaltyColors[user.loyalty]}>
-                                {user.loyalty}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant="outline" className={statusColors[user.status]}>
-                                {user.status}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
-                              {getTutorName(user.preferred_tutor)}
-                            </TableCell>
-                          </TableRow>
-                        </ContextMenuTrigger>
-                        <ContextMenuContent>
-                          <ContextMenuItem onClick={() => navigate(`/users/${user.id}`)}>
-                            <Eye className="me-2 h-4 w-4" />
-                            {t("users.view")}
-                          </ContextMenuItem>
-                          <ContextMenuItem>
-                            <Pencil className="me-2 h-4 w-4" />
-                            {t("users.edit")}
-                          </ContextMenuItem>
-                          <ContextMenuSeparator />
-                          <ContextMenuItem
-                            variant="destructive"
-                            onClick={() => { setDeleteTarget(user); setIsDeleteOpen(true) }}
-                          >
-                            <Trash2 className="me-2 h-4 w-4" />
-                            {t("users.delete")}
-                          </ContextMenuItem>
-                        </ContextMenuContent>
-                      </ContextMenu>
+                      <TableRow key={user.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <Avatar className="h-8 w-8">
+                              <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                                {user.full_name.split(" ").map(n => n[0]).join("")}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <p className="font-medium text-sm">{user.full_name}</p>
+                              <p className="text-xs text-muted-foreground md:hidden">{user.email || user.phone}</p>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
+                          {user.email || "—"}
+                        </TableCell>
+                        <TableCell className="hidden sm:table-cell">
+                          <span className="text-sm">{user.section || "—"}</span>
+                        </TableCell>
+                        <TableCell>
+                          {user.level ? (
+                            <Badge variant="outline" className={levelColors[user.level]}>
+                              {user.level}
+                            </Badge>
+                          ) : <span className="text-sm text-muted-foreground">—</span>}
+                        </TableCell>
+                        <TableCell className="hidden lg:table-cell">
+                          {user.loyalty ? (
+                            <Badge variant="outline" className={loyaltyColors[user.loyalty]}>
+                              {user.loyalty}
+                            </Badge>
+                          ) : <span className="text-sm text-muted-foreground">—</span>}
+                        </TableCell>
+                        <TableCell>
+                          {user.status ? (
+                            <Badge variant="outline" className={statusColors[user.status]}>
+                              {user.status}
+                            </Badge>
+                          ) : <span className="text-sm text-muted-foreground">—</span>}
+                        </TableCell>
+                        <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
+                          {getTutorName(user.preferred_tutor ?? null)}
+                        </TableCell>
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => navigate(`/users/${user.id}`)}>
+                                <Eye className="me-2 h-4 w-4" />
+                                {t("users.view")}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => openEdit(user)}>
+                                <Pencil className="me-2 h-4 w-4" />
+                                {t("users.edit")}
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                className="text-destructive focus:text-destructive"
+                                onClick={() => { setDeleteTarget(user); setIsDeleteOpen(true) }}
+                              >
+                                <Trash2 className="me-2 h-4 w-4" />
+                                {t("users.delete")}
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
                     ))
                   )}
                 </TableBody>
@@ -270,18 +290,28 @@ const UsersTable = ({ users, loading, error, onRefetch }: UsersTableProps) => {
       </CardContent>
     </Card>
 
-    <AddUserDialog open={isAddOpen} onOpenChange={setIsAddOpen} onSuccess={onRefetch} />
+    <AddUserDialog
+      open={isAddOpen}
+      onOpenChange={(open) => {
+        setIsAddOpen(open)
+        if (!open) setEditTarget(null) // clear edit target when dialog closes
+      }}
+      onSuccess={onRefetch}
+      onCreateUser={onCreateUser}
+      onUpdateUser={onUpdateUser}
+      editingUser={editTarget}
+    />
 
     {/* Delete Confirmation Dialog */}
     <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{t("users.deleteConfirm", "Delete Client")}</DialogTitle>
-          <DialogDescription>{t("users.deleteWarning", "Are you sure? This action cannot be undone.")}</DialogDescription>
+          <DialogDescription>{t("users.deleteWarning", "Are you sure? This will remove the client from both the database and their login account.")}</DialogDescription>
         </DialogHeader>
         {deleteTarget && (
           <p className="text-sm text-muted-foreground">
-            {deleteTarget.full_name} ({deleteTarget.email})
+            {deleteTarget.full_name} ({deleteTarget.email || deleteTarget.phone})
           </p>
         )}
         <DialogFooter>

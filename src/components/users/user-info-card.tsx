@@ -28,7 +28,8 @@ const InfoRow = ({ icon: Icon, label, value }: InfoRowProps) => (
   </div>
 )
 
-const formatDate = (dateStr: string) => {
+const formatDate = (dateStr: string | undefined) => {
+  if (!dateStr) return "—"
   try {
     return format(new Date(dateStr), "MMM d, yyyy")
   } catch {
@@ -47,16 +48,16 @@ const UserInfoCard = ({ user }: UserInfoCardProps) => {
           {/* Personal */}
           <div>
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Personal</p>
-            <InfoRow icon={UserIcon} label="Gender" value={user.gender} />
+            <InfoRow icon={UserIcon} label="Gender" value={user.gender || "—"} />
             <InfoRow icon={Calendar} label="Date of Birth" value={formatDate(user.dob)} />
-            <InfoRow icon={GraduationCap} label="Level" value={user.level} />
+            <InfoRow icon={GraduationCap} label="Level" value={user.level || "—"} />
           </div>
 
           {/* Membership */}
           <div>
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Membership</p>
-            <InfoRow icon={Heart} label="Loyalty" value={user.loyalty} />
-            <InfoRow icon={Briefcase} label="Section" value={user.section} />
+            <InfoRow icon={Heart} label="Loyalty" value={user.loyalty || "—"} />
+            <InfoRow icon={Briefcase} label="Section" value={user.section || "—"} />
             <InfoRow icon={Users} label="Referral Source" value={user.referral_source} />
           </div>
 
@@ -64,7 +65,7 @@ const UserInfoCard = ({ user }: UserInfoCardProps) => {
           <div>
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">System</p>
             <InfoRow icon={Calendar} label="First Visit" value={formatDate(user.first_visit)} />
-            <InfoRow icon={UserIcon} label="Preferred Tutor" value={getTutorName(user.preferred_tutor)} />
+            <InfoRow icon={UserIcon} label="Preferred Tutor" value={getTutorName(user.preferred_tutor ?? null)} />
             <InfoRow icon={Clock} label="Last Updated" value={formatDate(user.updated_at)} />
           </div>
         </div>

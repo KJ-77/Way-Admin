@@ -4,34 +4,44 @@ export type Loyalty = "Low" | "Mid" | "High"
 export type ReferralSource = "Referral" | "SCM" | "Walk-In"
 export type UserStatus = "Active" | "Dormant"
 export type Section = "Studio" | "PC"
-export type PackageType = "basic" | "standard" | "premium"
+export type PackageType = "basic" | "standard" | "premium" // used by mock subscription data
 export type PackageStatus = "active" | "expired" | "depleted"
 export type ClassType = "pottery" | "glass" | "canvas" | "mixed-media"
 export type Attendance = "present" | "absent" | "late" | "cancelled"
 
 export interface User {
-  id: number
+  id: string // cognito_sub
   full_name: string
-  gender: Gender
-  dob: string
-  level: Level
-  preferred_tutor: number | null
-  loyalty: Loyalty
   phone: string
-  email: string
-  first_visit: string
   referral_source: ReferralSource
-  status: UserStatus
-  section: Section
-  notes: string
+  gender?: Gender
+  dob?: string
+  level?: Level
+  preferred_tutor?: number | null
+  loyalty?: Loyalty
+  email?: string
+  first_visit?: string
+  status?: UserStatus
+  section?: Section
+  notes?: string
   created_at: string
   updated_at: string
 }
 
+// Product catalog — fixed package definitions offered by the studio
 export interface Package {
   id: number
+  package_type: string
+  sessions_included: number
+  weight_included: number
+  price: number
+}
+
+// Client subscription to a package (mock data only for now — API TBD)
+export interface UserPackage {
+  id: number
   purchase_date: string
-  user_id: number
+  user_id: string
   package_type: PackageType
   sessions_included: number
   weight_included: number
@@ -46,7 +56,7 @@ export interface Session {
   id: number
   date: string
   time: string
-  user_id: number
+  user_id: string
   class_type: ClassType
   package_id: number
   session_nb: number
