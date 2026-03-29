@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 import {
   Plus, MoreHorizontal, Pencil, Trash2, Loader2, AlertCircle,
-  CalendarDays, Weight, DollarSign, Package as PackageIcon,
+  CalendarDays, Weight, Package as PackageIcon,
 } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -134,16 +134,15 @@ const PackagesTable = ({
           <p className="text-xs text-muted-foreground">{error}</p>
         </div>
       ) : loading ? (
-        <div className="grid gap-4 sm:grid-cols-2">
-          {[1, 2, 3, 4].map(i => (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {[1, 2, 3, 4, 5, 6].map(i => (
             <Card key={i} className="relative overflow-hidden">
               <div className="absolute top-0 inset-x-0 h-1 bg-muted" />
-              <CardContent className="p-5 pt-6 space-y-4 animate-pulse">
-                <div className="h-5 w-3/4 rounded bg-muted" />
-                <div className="grid grid-cols-3 gap-3">
-                  {[1, 2, 3].map(j => (
-                    <div key={j} className="h-20 rounded-lg bg-muted/50" />
-                  ))}
+              <CardContent className="p-5 pt-6 flex flex-col justify-between min-h-[140px] animate-pulse">
+                <div className="h-6 w-3/4 rounded bg-muted" />
+                <div className="flex items-center justify-between mt-4 pt-3 border-t border-border/40">
+                  <div className="h-4 w-1/2 rounded bg-muted/50" />
+                  <div className="h-6 w-16 rounded bg-muted/50" />
                 </div>
               </CardContent>
             </Card>
@@ -167,18 +166,16 @@ const PackagesTable = ({
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {packages.map(pkg => (
             <Card key={pkg.id} className="group relative overflow-hidden transition-colors hover:border-primary/30">
               {/* Amber accent bar */}
               <div className="absolute top-0 inset-x-0 h-1 bg-primary/80" />
 
-              <CardContent className="p-5 pt-6">
+              <CardContent className="p-5 pt-6 flex flex-col justify-between min-h-[140px]">
                 {/* Header row — name + actions */}
-                <div className="flex items-start justify-between gap-3 mb-4">
-                  <div className="min-w-0">
-                    <h3 className="font-semibold text-sm leading-tight truncate">{pkg.package_type}</h3>
-                  </div>
+                <div className="flex items-start justify-between gap-3">
+                  <h3 className="font-bold text-lg leading-snug">{pkg.package_type}</h3>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button
@@ -206,39 +203,22 @@ const PackagesTable = ({
                   </DropdownMenu>
                 </div>
 
-                {/* Stat blocks */}
-                <div className="grid grid-cols-3 gap-3">
-                  {/* Sessions */}
-                  <div className="rounded-lg bg-muted/50 border border-border/50 p-3 text-center space-y-1.5">
-                    <div className="mx-auto w-fit rounded-md bg-blue-500/10 p-1.5">
+                {/* Stats row — inline, clean */}
+                <div className="flex items-center justify-between mt-4 pt-3 border-t border-border/40">
+                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                    <span className="flex items-center gap-1.5">
                       <CalendarDays className="h-3.5 w-3.5 text-blue-400" />
-                    </div>
-                    <p className="text-xl font-bold">{pkg.sessions_included ?? "—"}</p>
-                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{t("packages.sessions")}</p>
-                  </div>
-
-                  {/* Weight */}
-                  <div className="rounded-lg bg-muted/50 border border-border/50 p-3 text-center space-y-1.5">
-                    <div className="mx-auto w-fit rounded-md bg-emerald-500/10 p-1.5">
+                      {pkg.sessions_included ?? "—"} {t("packages.sessions").toLowerCase()}
+                    </span>
+                    <span className="text-border/60">|</span>
+                    <span className="flex items-center gap-1.5">
                       <Weight className="h-3.5 w-3.5 text-emerald-400" />
-                    </div>
-                    <p className="text-xl font-bold">
-                      {pkg.weight_included != null ? pkg.weight_included : "—"}
-                      {pkg.weight_included != null && <span className="text-xs font-normal text-muted-foreground"> kg</span>}
-                    </p>
-                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{t("packages.material")}</p>
+                      {pkg.weight_included != null ? `${pkg.weight_included} kg` : "—"}
+                    </span>
                   </div>
-
-                  {/* Price — amber accent */}
-                  <div className="rounded-lg bg-primary/5 border border-primary/20 p-3 text-center space-y-1.5">
-                    <div className="mx-auto w-fit rounded-md bg-primary/10 p-1.5">
-                      <DollarSign className="h-3.5 w-3.5 text-primary" />
-                    </div>
-                    <p className="text-xl font-bold text-primary">
-                      {pkg.price != null ? `$${pkg.price}` : "—"}
-                    </p>
-                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{t("packages.priceLabel")}</p>
-                  </div>
+                  <span className="text-xl font-bold text-primary">
+                    {pkg.price != null ? `$${pkg.price}` : "—"}
+                  </span>
                 </div>
               </CardContent>
             </Card>
