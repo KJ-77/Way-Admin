@@ -4,7 +4,6 @@ export type Loyalty = "Low" | "Mid" | "High"
 export type ReferralSource = "Referral" | "SCM" | "Walk-In"
 export type UserStatus = "Active" | "Dormant"
 export type Section = "Studio" | "PC"
-export type PackageType = "basic" | "standard" | "premium" // used by mock subscription data
 export type PackageStatus = "active" | "expired" | "depleted"
 export type ClassType = "pottery" | "glass" | "canvas" | "mixed-media"
 export type Attendance = "present" | "absent" | "late" | "cancelled"
@@ -37,19 +36,25 @@ export interface Package {
   price: number
 }
 
-// Client subscription to a package (mock data only for now — API TBD)
+// Client subscription — API response includes computed status + joined data
 export interface UserPackage {
   id: number
-  purchase_date: string
   user_id: string
-  package_type: PackageType
-  sessions_included: number
-  weight_included: number
+  package_id: number
+  purchase_date: string
   remaining_sessions: number
   remaining_weight: number
   expiry_date: string
+  notes: string | null
+  // Computed by backend (derived from expiry_date + remaining sessions/weight)
   status: PackageStatus
-  notes?: string
+  // Joined from users table
+  user_name: string
+  // Joined from packages table
+  package_name: string
+  sessions_included: number
+  weight_included: number
+  price: number
 }
 
 export interface Session {

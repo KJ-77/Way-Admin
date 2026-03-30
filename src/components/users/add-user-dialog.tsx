@@ -142,7 +142,7 @@ const SuccessDialog = ({
           </div>
         ) : (
           <p className="text-sm text-muted-foreground">
-            Cognito sent a temporary password to <span className="font-medium text-foreground">{email}</span>.
+            A temporary password has been sent to <span className="font-medium text-foreground">{email}</span>.
             The client will be asked to set a new password on first sign-in.
           </p>
         )}
@@ -279,7 +279,7 @@ const AddUserDialog = ({ open, onOpenChange, onSuccess, onCreateUser, onUpdateUs
                 id="phone"
                 value={formData.phone}
                 onChange={e => updateField("phone", e.target.value)}
-                placeholder="70 123 456"
+                placeholder="+961 70 123 456"
                 disabled={isEditMode}
               />
               {isEditMode && (
