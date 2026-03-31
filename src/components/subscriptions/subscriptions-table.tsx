@@ -271,9 +271,9 @@ const SubscriptionsTable = ({
                       </TableRow>
                     ) : (
                       filtered.map((sub) => {
-                        // Session usage progress (0-100)
+                        // Remaining sessions as a percentage (full bar = all sessions left, depletes as sessions are used)
                         const sessionProgress = sub.sessions_included > 0
-                          ? ((sub.sessions_included - sub.remaining_sessions) / sub.sessions_included) * 100
+                          ? (sub.remaining_sessions / sub.sessions_included) * 100
                           : 0
 
                         return (

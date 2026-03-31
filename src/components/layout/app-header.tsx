@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next"
-import { Search, Bell } from "lucide-react"
+import { Search } from "lucide-react"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { Separator } from "@/components/ui/separator"
 import { Input } from "@/components/ui/input"
@@ -30,9 +30,9 @@ const AppHeader = () => {
       sessions: "nav.sessions",
       schedule: "nav.schedule",
       packages: "nav.packages",
+      subscriptions: "nav.subscriptions",
       tutors: "nav.tutors",
       accounts: "nav.accounts",
-      settings: "nav.settings",
     }
 
     return segments.map((segment, index) => {
@@ -79,13 +79,6 @@ const AppHeader = () => {
             className="w-64 ps-8 bg-muted/50 border-transparent focus:border-primary/50 focus:bg-background transition-all"
           />
         </div>
-
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-4 w-4" />
-          <span className="absolute -top-0.5 -end-0.5 h-3.5 w-3.5 rounded-full bg-primary text-[9px] font-bold text-primary-foreground flex items-center justify-center">
-            3
-          </span>
-        </Button>
 
         <LanguageToggle />
         <ModeToggle />

@@ -14,7 +14,6 @@ import SubscriptionsPage from "@/pages/subscriptions"
 import TutorsPage from "@/pages/tutors"
 import SchedulePage from "@/pages/schedule"
 import AccountsPage from "@/pages/accounts"
-import SettingsPage from "@/pages/settings"
 import UserDetailPage from "@/pages/user-detail"
 import NotFound from "@/pages/not-found"
 
@@ -48,7 +47,6 @@ const App = () => {
                             </ProtectedRoute>
                           }
                         />
-                        <Route path="/settings" element={<SettingsPage />} />
                         <Route path="*" element={<NotFound />} />
                       </Routes>
                     </AppLayout>

@@ -134,19 +134,6 @@ const AppSidebar = () => {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               )}
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  isActive={isActive("/settings")}
-                  tooltip={t("nav.settings")}
-                  className="transition-all duration-200"
-                >
-                  <Link to="/settings">
-                    <Settings className="h-4 w-4" />
-                    <span>{t("nav.settings")}</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
