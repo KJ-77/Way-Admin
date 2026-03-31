@@ -2,6 +2,32 @@ import { useState, useEffect, useCallback } from "react"
 import { apiFetch } from "@/lib/api"
 import type { UserPackage } from "@/types"
 
+// Lightweight hook for a single user's subscriptions (used on user detail page + session create dialog)
+export function useUserSubscriptions(userId: string | undefined) {
+  const [subscriptions, setSubscriptions] = useState<UserPackage[]>([])
+  const [loading, setLoading] = useState(true)
+
+  const fetchSubscriptions = useCallback(async () => {
+    if (!userId) { setLoading(false); return }
+    try {
+      setLoading(true)
+      const response = await apiFetch(`/user-packages?user_id=${userId}`)
+      if (!response.ok) throw new Error("Failed to fetch subscriptions")
+      setSubscriptions(await response.json())
+    } catch {
+      setSubscriptions([])
+    } finally {
+      setLoading(false)
+    }
+  }, [userId])
+
+  useEffect(() => {
+    fetchSubscriptions()
+  }, [fetchSubscriptions])
+
+  return { subscriptions, loading, refetch: fetchSubscriptions }
+}
+
 export function useSubscriptions() {
   const [subscriptions, setSubscriptions] = useState<UserPackage[]>([])
   const [loading, setLoading] = useState(true)

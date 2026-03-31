@@ -28,9 +28,10 @@ const loyaltyColors: Record<string, string> = {
 
 interface UserProfileHeaderProps {
   user: User
+  children?: React.ReactNode
 }
 
-const UserProfileHeader = ({ user }: UserProfileHeaderProps) => {
+const UserProfileHeader = ({ user, children }: UserProfileHeaderProps) => {
   const navigate = useNavigate()
   const initials = user.full_name.split(" ").map(n => n[0]).join("")
   const memberSince = user.first_visit
@@ -88,6 +89,9 @@ const UserProfileHeader = ({ user }: UserProfileHeaderProps) => {
                 </span>
               )}
             </div>
+
+            {/* Quick action buttons (passed from parent) */}
+            {children && <div className="pt-1">{children}</div>}
           </div>
         </div>
       </CardContent>

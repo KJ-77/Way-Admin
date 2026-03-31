@@ -1,29 +1,37 @@
+import { useTranslation } from "react-i18next"
 import { CalendarDays, CheckCircle, Clock, XCircle } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
-import { sessions } from "@/data/mock-data"
+import type { Session } from "@/types"
 
-const SessionsStats = () => {
+interface SessionsStatsProps {
+  sessions: Session[]
+  loading: boolean
+}
+
+const SessionsStats = ({ sessions, loading }: SessionsStatsProps) => {
+  const { t } = useTranslation()
+
   const statItems = [
     {
-      label: "Total Sessions",
+      label: t("sessions.totalSessions"),
       value: sessions.length,
       icon: CalendarDays,
       color: "text-chart-1 bg-chart-1/10",
     },
     {
-      label: "Present",
-      value: sessions.filter(s => s.attendance === "present").length,
+      label: t("sessions.attendedSessions"),
+      value: sessions.filter(s => s.attendance === "attended").length,
       icon: CheckCircle,
       color: "text-emerald-500 bg-emerald-500/10",
     },
     {
-      label: "Late",
-      value: sessions.filter(s => s.attendance === "late").length,
+      label: t("sessions.bookedSessions"),
+      value: sessions.filter(s => s.attendance === "booked").length,
       icon: Clock,
       color: "text-amber-500 bg-amber-500/10",
     },
     {
-      label: "Cancelled",
+      label: t("sessions.cancelledSessions"),
       value: sessions.filter(s => s.attendance === "cancelled").length,
       icon: XCircle,
       color: "text-destructive bg-destructive/10",
@@ -38,10 +46,17 @@ const SessionsStats = () => {
             <div className={`rounded-lg p-2.5 ${item.color}`}>
               <item.icon className="h-5 w-5" />
             </div>
-            <div>
-              <p className="text-2xl font-bold">{item.value}</p>
-              <p className="text-xs text-muted-foreground">{item.label}</p>
-            </div>
+            {loading ? (
+              <div className="space-y-2 animate-pulse">
+                <div className="h-7 w-8 rounded bg-muted" />
+                <div className="h-3 w-20 rounded bg-muted" />
+              </div>
+            ) : (
+              <div>
+                <p className="text-2xl font-bold">{item.value}</p>
+                <p className="text-xs text-muted-foreground">{item.label}</p>
+              </div>
+            )}
           </CardContent>
         </Card>
       ))}

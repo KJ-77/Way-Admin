@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { useNavigate } from "react-router-dom"
 import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 import {
@@ -72,6 +73,7 @@ const SubscriptionsTable = ({
   onRefetch, onCreateSubscription, onUpdateSubscription, onDeleteSubscription,
 }: SubscriptionsTableProps) => {
   const { t } = useTranslation()
+  const navigate = useNavigate()
 
   // Filters
   const [search, setSearch] = useState("")
@@ -277,7 +279,11 @@ const SubscriptionsTable = ({
                           : 0
 
                         return (
-                          <TableRow key={sub.id} className="group">
+                          <TableRow
+                            key={sub.id}
+                            className="group cursor-pointer"
+                            onClick={() => navigate(`/users/${sub.user_id}`)}
+                          >
                             <TableCell className="text-sm font-medium">{sub.user_name}</TableCell>
                             <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate">
                               {sub.package_name}
@@ -304,7 +310,8 @@ const SubscriptionsTable = ({
                                 {t(`subscriptions.${sub.status}`)}
                               </Badge>
                             </TableCell>
-                            <TableCell>
+                            {/* stopPropagation prevents row click from firing when using the action menu */}
+                            <TableCell onClick={(e) => e.stopPropagation()}>
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                   <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">

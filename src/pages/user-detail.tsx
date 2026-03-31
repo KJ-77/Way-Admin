@@ -1,13 +1,20 @@
 import { useParams } from "react-router-dom"
 import { Loader2, AlertCircle } from "lucide-react"
 import { useUser } from "@/hooks/use-user"
+import { useUserSessions } from "@/hooks/use-sessions"
+import { useUserSubscriptions } from "@/hooks/use-subscriptions"
 import UserProfileHeader from "@/components/users/user-profile-header"
 import UserInfoCard from "@/components/users/user-info-card"
-import UserPlaceholderWidgets from "@/components/users/user-placeholder-widgets"
+import UserDetailStats from "@/components/users/user-detail-stats"
+import UserDetailSessions from "@/components/users/user-detail-sessions"
+import UserDetailSubscriptions from "@/components/users/user-detail-subscriptions"
+import UserDetailQuickActions from "@/components/users/user-detail-quick-actions"
 
 const UserDetailPage = () => {
   const { id } = useParams<{ id: string }>()
   const { user, loading, error } = useUser(id)
+  const { sessions, loading: sessionsLoading, refetch: refetchSessions } = useUserSessions(id)
+  const { subscriptions, loading: subsLoading, refetch: refetchSubscriptions } = useUserSubscriptions(id)
 
   if (loading) {
     return (
@@ -27,11 +34,34 @@ const UserDetailPage = () => {
     )
   }
 
+  // Refetch both sessions and subscriptions after a session is created (session creation decrements subscription)
+  const handleSessionCreated = () => {
+    refetchSessions()
+    refetchSubscriptions()
+  }
+
   return (
     <div className="space-y-6">
-      <UserProfileHeader user={user} />
+      <UserProfileHeader user={user}>
+        <UserDetailQuickActions
+          user={user}
+          subscriptions={subscriptions}
+          onSessionCreated={handleSessionCreated}
+          onSubscriptionCreated={refetchSubscriptions}
+        />
+      </UserProfileHeader>
+      <UserDetailStats
+        sessions={sessions}
+        subscriptions={subscriptions}
+        loading={sessionsLoading || subsLoading}
+      />
       <UserInfoCard user={user} />
-      <UserPlaceholderWidgets />
+
+      {/* Sessions + Subscriptions grid */}
+      <div className="grid gap-6 lg:grid-cols-3">
+        <UserDetailSessions sessions={sessions} loading={sessionsLoading} />
+        <UserDetailSubscriptions subscriptions={subscriptions} loading={subsLoading} />
+      </div>
     </div>
   )
 }

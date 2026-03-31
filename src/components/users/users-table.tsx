@@ -204,7 +204,11 @@ const UsersTable = ({ users, loading, error, onRefetch, onCreateUser, onUpdateUs
                     </TableRow>
                   ) : (
                     filteredUsers.map((user) => (
-                      <TableRow key={user.id}>
+                      <TableRow
+                        key={user.id}
+                        className="cursor-pointer"
+                        onClick={() => navigate(`/users/${user.id}`)}
+                      >
                         <TableCell>
                           <div className="flex items-center gap-3">
                             <Avatar className="h-8 w-8">
@@ -248,7 +252,7 @@ const UsersTable = ({ users, loading, error, onRefetch, onCreateUser, onUpdateUs
                         <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
                           {getTutorName(user.preferred_tutor ?? null)}
                         </TableCell>
-                        <TableCell>
+                        <TableCell onClick={(e) => e.stopPropagation()}>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="icon" className="h-8 w-8">

@@ -1,4 +1,19 @@
-import type { User, UserPackage, Session, Tutor, ActivityItem, ScheduleEvent } from "@/types"
+import type { User, UserPackage, Tutor, ActivityItem, ScheduleEvent } from "@/types"
+
+// Mock session shape — kept for dashboard placeholders until real API integration
+interface MockSession {
+  id: number
+  date: string
+  time: string
+  user_id: string
+  class_type: string
+  package_id: number
+  session_nb: number
+  deduct_group: number
+  session_weight: number
+  attendance: string
+  notes?: string
+}
 
 export const tutors: Tutor[] = [
   { id: 1, full_name: "Layla Khoury", email: "layla@way-studio.com", phone: "+961 71 234 567" },
@@ -150,7 +165,7 @@ export const userPackages: UserPackage[] = [
   },
 ]
 
-export const sessions: Session[] = [
+export const sessions: MockSession[] = [
   { id: 1, date: "2025-03-10", time: "10:00", user_id: "mock-1", class_type: "pottery", package_id: 1, session_nb: 8, deduct_group: 1, session_weight: 2, attendance: "present" },
   { id: 2, date: "2025-03-10", time: "10:00", user_id: "mock-7", class_type: "pottery", package_id: 7, session_nb: 5, deduct_group: 1, session_weight: 2, attendance: "present" },
   { id: 3, date: "2025-03-10", time: "14:00", user_id: "mock-2", class_type: "glass", package_id: 2, session_nb: 1, deduct_group: 2, session_weight: 2, attendance: "present" },

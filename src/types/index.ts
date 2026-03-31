@@ -6,7 +6,7 @@ export type UserStatus = "Active" | "Dormant"
 export type Section = "Studio" | "PC"
 export type PackageStatus = "active" | "expired" | "depleted"
 export type ClassType = "pottery" | "glass" | "canvas" | "mixed-media"
-export type Attendance = "present" | "absent" | "late" | "cancelled"
+export type Attendance = "attended" | "booked" | "cancelled"
 
 export interface User {
   id: string // cognito_sub
@@ -59,16 +59,16 @@ export interface UserPackage {
 
 export interface Session {
   id: number
-  date: string
-  time: string
   user_id: string
-  class_type: ClassType
   package_id: number
   session_nb: number
-  deduct_group: number
-  session_weight: number
+  session_weight: number // decimal(10,2)
   attendance: Attendance
   notes?: string
+  created_at: string
+  // Joined from users + packages
+  user_name: string
+  package_name: string
 }
 
 export interface Tutor {
