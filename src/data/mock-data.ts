@@ -84,69 +84,69 @@ export const users: User[] = [
 
 export const userPackages: UserPackage[] = [
   {
-    id: 1, purchase_date: "2025-01-15", user_id: "mock-1", package_type: "premium",
-    sessions_included: 12, weight_included: 24, remaining_sessions: 4, remaining_weight: 8,
-    expiry_date: "2025-07-15", status: "active", notes: "VIP discount applied"
+    id: 1, purchase_date: "2025-01-15", user_id: "mock-1", package_id: 3, package_name: "Premium",
+    user_name: "Nadia Haddad", sessions_included: 12, weight_included: 24, remaining_sessions: 4, remaining_weight: 8,
+    expiry_date: "2025-07-15", status: "active", notes: "VIP discount applied", price: 300
   },
   {
-    id: 2, purchase_date: "2025-02-01", user_id: "mock-2", package_type: "basic",
-    sessions_included: 4, weight_included: 8, remaining_sessions: 3, remaining_weight: 6,
-    expiry_date: "2025-05-01", status: "active"
+    id: 2, purchase_date: "2025-02-01", user_id: "mock-2", package_id: 1, package_name: "Basic",
+    user_name: "Karim Mansour", sessions_included: 4, weight_included: 8, remaining_sessions: 3, remaining_weight: 6,
+    expiry_date: "2025-05-01", status: "active", notes: null, price: 100
   },
   {
-    id: 3, purchase_date: "2024-12-20", user_id: "mock-3", package_type: "premium",
-    sessions_included: 12, weight_included: 24, remaining_sessions: 1, remaining_weight: 2,
-    expiry_date: "2025-06-20", status: "active"
+    id: 3, purchase_date: "2024-12-20", user_id: "mock-3", package_id: 3, package_name: "Premium",
+    user_name: "Layla Fakhouri", sessions_included: 12, weight_included: 24, remaining_sessions: 1, remaining_weight: 2,
+    expiry_date: "2025-06-20", status: "active", notes: null, price: 300
   },
   {
-    id: 4, purchase_date: "2025-01-20", user_id: "mock-4", package_type: "standard",
-    sessions_included: 8, weight_included: 16, remaining_sessions: 5, remaining_weight: 10,
-    expiry_date: "2025-07-20", status: "active"
+    id: 4, purchase_date: "2025-01-20", user_id: "mock-4", package_id: 2, package_name: "Standard",
+    user_name: "Omar Bazzi", sessions_included: 8, weight_included: 16, remaining_sessions: 5, remaining_weight: 10,
+    expiry_date: "2025-07-20", status: "active", notes: null, price: 200
   },
   {
-    id: 5, purchase_date: "2025-02-14", user_id: "mock-5", package_type: "basic",
-    sessions_included: 4, weight_included: 8, remaining_sessions: 4, remaining_weight: 8,
-    expiry_date: "2025-05-14", status: "active"
+    id: 5, purchase_date: "2025-02-14", user_id: "mock-5", package_id: 1, package_name: "Basic",
+    user_name: "Rima Khoury", sessions_included: 4, weight_included: 8, remaining_sessions: 4, remaining_weight: 8,
+    expiry_date: "2025-05-14", status: "active", notes: null, price: 100
   },
   {
-    id: 6, purchase_date: "2024-08-10", user_id: "mock-6", package_type: "standard",
-    sessions_included: 8, weight_included: 16, remaining_sessions: 0, remaining_weight: 0,
-    expiry_date: "2025-02-10", status: "expired"
+    id: 6, purchase_date: "2024-08-10", user_id: "mock-6", package_id: 2, package_name: "Standard",
+    user_name: "Tariq Saleh", sessions_included: 8, weight_included: 16, remaining_sessions: 0, remaining_weight: 0,
+    expiry_date: "2025-02-10", status: "expired", notes: null, price: 200
   },
   {
-    id: 7, purchase_date: "2025-01-05", user_id: "mock-7", package_type: "premium",
-    sessions_included: 12, weight_included: 24, remaining_sessions: 7, remaining_weight: 14,
-    expiry_date: "2025-07-05", status: "active"
+    id: 7, purchase_date: "2025-01-05", user_id: "mock-7", package_id: 3, package_name: "Premium",
+    user_name: "Hana Awad", sessions_included: 12, weight_included: 24, remaining_sessions: 7, remaining_weight: 14,
+    expiry_date: "2025-07-05", status: "active", notes: null, price: 300
   },
   {
-    id: 8, purchase_date: "2025-03-01", user_id: "mock-8", package_type: "basic",
-    sessions_included: 4, weight_included: 8, remaining_sessions: 4, remaining_weight: 8,
-    expiry_date: "2025-06-01", status: "active"
+    id: 8, purchase_date: "2025-03-01", user_id: "mock-8", package_id: 1, package_name: "Basic",
+    user_name: "Samir Jaber", sessions_included: 4, weight_included: 8, remaining_sessions: 4, remaining_weight: 8,
+    expiry_date: "2025-06-01", status: "active", notes: null, price: 100
   },
   {
-    id: 9, purchase_date: "2024-06-15", user_id: "mock-9", package_type: "standard",
-    sessions_included: 8, weight_included: 16, remaining_sessions: 2, remaining_weight: 4,
-    expiry_date: "2024-12-15", status: "expired"
+    id: 9, purchase_date: "2024-06-15", user_id: "mock-9", package_id: 2, package_name: "Standard",
+    user_name: "Dina Rizk", sessions_included: 8, weight_included: 16, remaining_sessions: 2, remaining_weight: 4,
+    expiry_date: "2024-12-15", status: "expired", notes: null, price: 200
   },
   {
-    id: 10, purchase_date: "2025-02-20", user_id: "mock-10", package_type: "premium",
-    sessions_included: 12, weight_included: 24, remaining_sessions: 10, remaining_weight: 20,
-    expiry_date: "2025-08-20", status: "active"
+    id: 10, purchase_date: "2025-02-20", user_id: "mock-10", package_id: 3, package_name: "Premium",
+    user_name: "Walid Kassem", sessions_included: 12, weight_included: 24, remaining_sessions: 10, remaining_weight: 20,
+    expiry_date: "2025-08-20", status: "active", notes: null, price: 300
   },
   {
-    id: 11, purchase_date: "2025-03-01", user_id: "mock-11", package_type: "basic",
-    sessions_included: 4, weight_included: 8, remaining_sessions: 3, remaining_weight: 6,
-    expiry_date: "2025-06-01", status: "active"
+    id: 11, purchase_date: "2025-03-01", user_id: "mock-11", package_id: 1, package_name: "Basic",
+    user_name: "Yasmine Nassar", sessions_included: 4, weight_included: 8, remaining_sessions: 3, remaining_weight: 6,
+    expiry_date: "2025-06-01", status: "active", notes: null, price: 100
   },
   {
-    id: 12, purchase_date: "2025-01-10", user_id: "mock-12", package_type: "standard",
-    sessions_included: 8, weight_included: 16, remaining_sessions: 3, remaining_weight: 6,
-    expiry_date: "2025-07-10", status: "active"
+    id: 12, purchase_date: "2025-01-10", user_id: "mock-12", package_id: 2, package_name: "Standard",
+    user_name: "Fadi Matar", sessions_included: 8, weight_included: 16, remaining_sessions: 3, remaining_weight: 6,
+    expiry_date: "2025-07-10", status: "active", notes: null, price: 200
   },
   {
-    id: 13, purchase_date: "2025-02-01", user_id: "mock-6", package_type: "standard",
-    sessions_included: 8, weight_included: 16, remaining_sessions: 6, remaining_weight: 12,
-    expiry_date: "2025-08-01", status: "active"
+    id: 13, purchase_date: "2025-02-01", user_id: "mock-6", package_id: 2, package_name: "Standard",
+    user_name: "Tariq Saleh", sessions_included: 8, weight_included: 16, remaining_sessions: 6, remaining_weight: 12,
+    expiry_date: "2025-08-01", status: "active", notes: null, price: 200
   },
 ]
 
@@ -235,9 +235,9 @@ export const monthlyRevenueData = [
 ]
 
 export const packageDistribution = [
-  { type: "Basic", count: userPackages.filter(p => p.package_type === "basic").length, fill: "var(--color-chart-2)" },
-  { type: "Standard", count: userPackages.filter(p => p.package_type === "standard").length, fill: "var(--color-chart-4)" },
-  { type: "Premium", count: userPackages.filter(p => p.package_type === "premium").length, fill: "var(--color-chart-1)" },
+  { type: "Basic", count: userPackages.filter(p => p.package_name === "Basic").length, fill: "var(--color-chart-2)" },
+  { type: "Standard", count: userPackages.filter(p => p.package_name === "Standard").length, fill: "var(--color-chart-4)" },
+  { type: "Premium", count: userPackages.filter(p => p.package_name === "Premium").length, fill: "var(--color-chart-1)" },
 ]
 
 export const clientGrowthData = [
