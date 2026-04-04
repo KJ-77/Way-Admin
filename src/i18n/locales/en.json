@@ -229,6 +229,20 @@
     "changePassword": "Change Password",
     "changingPassword": "Changing password...",
     "passwordMismatch": "Passwords do not match",
+    "forgotPassword": "Forgot password?",
+    "forgotPasswordTitle": "Forgot Password",
+    "forgotPasswordDescription": "Enter your email and we'll send you a verification code",
+    "sendCode": "Send Verification Code",
+    "sendingCode": "Sending code...",
+    "resetPasswordTitle": "Reset Password",
+    "resetPasswordDescription": "Enter the code sent to your email and choose a new password",
+    "verificationCode": "Verification Code",
+    "resetPassword": "Reset Password",
+    "resettingPassword": "Resetting password...",
+    "passwordResetSuccessTitle": "Password Reset",
+    "passwordResetSuccessDescription": "Your password has been successfully reset",
+    "passwordResetSuccessMessage": "You can now sign in with your new password.",
+    "backToLogin": "Back to Login",
     "logout": "Logout"
   },
   "accounts": {
@@ -258,7 +272,12 @@
     "syncToDb": "Sync to Database",
     "syncSuccess": "Account synced to database successfully",
     "syncFailed": "Failed to sync account to database",
-    "phoneHint": "E.164 format: + followed by country code and number (e.g. +1234567890)"
+    "phoneHint": "E.164 format: + followed by country code and number (e.g. +1234567890)",
+    "resetPassword": "Reset Password",
+    "resetPasswordConfirm": "Reset Password",
+    "resetPasswordWarning": "This will send a verification code to the user's email. They'll need to enter the code and set a new password on the login page.",
+    "resetPasswordSuccess": "Password reset email sent successfully",
+    "resetPasswordFailed": "Failed to reset password"
   },
   "common": {
     "save": "Save",

@@ -229,6 +229,20 @@
     "changePassword": "تغيير كلمة المرور",
     "changingPassword": "جاري تغيير كلمة المرور...",
     "passwordMismatch": "كلمات المرور غير متطابقة",
+    "forgotPassword": "نسيت كلمة المرور؟",
+    "forgotPasswordTitle": "نسيت كلمة المرور",
+    "forgotPasswordDescription": "أدخل بريدك الإلكتروني وسنرسل لك رمز التحقق",
+    "sendCode": "إرسال رمز التحقق",
+    "sendingCode": "جاري إرسال الرمز...",
+    "resetPasswordTitle": "إعادة تعيين كلمة المرور",
+    "resetPasswordDescription": "أدخل الرمز المرسل إلى بريدك الإلكتروني واختر كلمة مرور جديدة",
+    "verificationCode": "رمز التحقق",
+    "resetPassword": "إعادة تعيين كلمة المرور",
+    "resettingPassword": "جاري إعادة التعيين...",
+    "passwordResetSuccessTitle": "تمت إعادة التعيين",
+    "passwordResetSuccessDescription": "تم إعادة تعيين كلمة المرور بنجاح",
+    "passwordResetSuccessMessage": "يمكنك الآن تسجيل الدخول بكلمة المرور الجديدة.",
+    "backToLogin": "العودة لتسجيل الدخول",
     "logout": "تسجيل الخروج"
   },
   "accounts": {
@@ -258,7 +272,12 @@
     "syncToDb": "مزامنة مع قاعدة البيانات",
     "syncSuccess": "تمت مزامنة الحساب بنجاح",
     "syncFailed": "فشلت مزامنة الحساب",
-    "phoneHint": "صيغة E.164: + متبوعاً برمز الدولة والرقم (مثال: 9611234567+)"
+    "phoneHint": "صيغة E.164: + متبوعاً برمز الدولة والرقم (مثال: 9611234567+)",
+    "resetPassword": "إعادة تعيين كلمة المرور",
+    "resetPasswordConfirm": "إعادة تعيين كلمة المرور",
+    "resetPasswordWarning": "سيتم إرسال رمز تحقق إلى البريد الإلكتروني للمستخدم. سيحتاج لإدخال الرمز وتعيين كلمة مرور جديدة في صفحة تسجيل الدخول.",
+    "resetPasswordSuccess": "تم إرسال بريد إعادة تعيين كلمة المرور بنجاح",
+    "resetPasswordFailed": "فشل إعادة تعيين كلمة المرور"
   },
   "common": {
     "save": "حفظ",

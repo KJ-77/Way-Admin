@@ -3,6 +3,7 @@ import {
   CognitoUser,
   AuthenticationDetails,
   type CognitoUserSession,
+  type IAuthenticationCallback,
 } from "amazon-cognito-identity-js"
 import { userPool } from "@/lib/cognito"
 
@@ -25,6 +26,8 @@ interface AuthContextType {
   needsNewPassword: boolean
   login: (email: string, password: string) => Promise<LoginResult>
   completeNewPassword: (newPassword: string) => Promise<void>
+  forgotPassword: (email: string) => Promise<void>
+  confirmForgotPassword: (email: string, code: string, newPassword: string) => Promise<void>
   logout: () => void
 }
 
@@ -132,6 +135,28 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     })
   }, [])
 
+  // Initiates forgot password flow — Cognito sends a 6-digit verification code to the user's email
+  const forgotPassword = useCallback(async (email: string): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      const cognitoUser = new CognitoUser({ Username: email, Pool: userPool })
+      cognitoUser.forgotPassword({
+        onSuccess: () => resolve(),
+        onFailure: (err) => reject(new Error(err.message || "Failed to initiate password reset")),
+      } as IAuthenticationCallback)
+    })
+  }, [])
+
+  // Completes the forgot password flow — verifies the code and sets the new password
+  const confirmForgotPassword = useCallback(async (email: string, code: string, newPassword: string): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      const cognitoUser = new CognitoUser({ Username: email, Pool: userPool })
+      cognitoUser.confirmPassword(code, newPassword, {
+        onSuccess: () => resolve(),
+        onFailure: (err) => reject(new Error(err.message || "Failed to reset password")),
+      })
+    })
+  }, [])
+
   const logout = useCallback(() => {
     const currentUser = userPool.getCurrentUser()
     if (currentUser) {
@@ -152,6 +177,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         needsNewPassword,
         login,
         completeNewPassword,
+        forgotPassword,
+        confirmForgotPassword,
         logout,
       }}
     >

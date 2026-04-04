@@ -96,5 +96,17 @@ export function useAccounts() {
     return response.json() as Promise<AdminAccount>
   }
 
-  return { accounts, loading, error, refetch: fetchAccounts, createAccount, updateAccount, deleteAccount, syncAccountToDb }
+  // Admin-initiated password reset — triggers Cognito to email a verification code
+  const resetPassword = async (id: string) => {
+    const response = await apiFetch(`/accounts/${id}/reset-password`, {
+      method: "POST",
+    })
+    if (!response.ok) {
+      const errData = await response.json().catch(() => null)
+      throw new Error(errData?.message || errData?.error || `Failed: ${response.status}`)
+    }
+    return response.json()
+  }
+
+  return { accounts, loading, error, refetch: fetchAccounts, createAccount, updateAccount, deleteAccount, syncAccountToDb, resetPassword }
 }

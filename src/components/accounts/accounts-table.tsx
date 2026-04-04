@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
-import { Search, Plus, MoreHorizontal, Pencil, Trash2, Loader2, AlertCircle, RefreshCw } from "lucide-react"
+import { Search, Plus, MoreHorizontal, Pencil, Trash2, Loader2, AlertCircle, RefreshCw, KeyRound } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -55,7 +55,7 @@ const emptyForm: FormData = {
 
 const AccountsTable = () => {
   const { t } = useTranslation()
-  const { accounts, loading, error, refetch, createAccount, updateAccount, deleteAccount, syncAccountToDb } = useAccounts()
+  const { accounts, loading, error, refetch, createAccount, updateAccount, deleteAccount, syncAccountToDb, resetPassword } = useAccounts()
   const [search, setSearch] = useState("")
   const [roleFilter, setRoleFilter] = useState<string>("all")
   const [isFormOpen, setIsFormOpen] = useState(false)
@@ -64,9 +64,12 @@ const AccountsTable = () => {
   const [editingAccount, setEditingAccount] = useState<AdminAccount | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<AdminAccount | null>(null)
   const [formData, setFormData] = useState<FormData>(emptyForm)
+  const [isResetPasswordOpen, setIsResetPasswordOpen] = useState(false)
+  const [resetTarget, setResetTarget] = useState<AdminAccount | null>(null)
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [syncing, setSyncing] = useState(false)
+  const [resettingPassword, setResettingPassword] = useState(false)
   // Holds account info from a failed DB sync, so the admin can retry
   const [unsyncedAccount, setUnsyncedAccount] = useState<DbSyncError["account"] | null>(null)
 
@@ -98,6 +101,26 @@ const AccountsTable = () => {
   const openDelete = (account: AdminAccount) => {
     setDeleteTarget(account)
     setIsDeleteOpen(true)
+  }
+
+  const openResetPassword = (account: AdminAccount) => {
+    setResetTarget(account)
+    setIsResetPasswordOpen(true)
+  }
+
+  const handleResetPassword = async () => {
+    if (!resetTarget) return
+    setResettingPassword(true)
+    try {
+      await resetPassword(resetTarget.id)
+      setIsResetPasswordOpen(false)
+      setResetTarget(null)
+      toast.success(t("accounts.resetPasswordSuccess"))
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t("accounts.resetPasswordFailed"))
+    } finally {
+      setResettingPassword(false)
+    }
   }
 
   const handleSave = async () => {
@@ -267,6 +290,10 @@ const AccountsTable = () => {
                                 <Pencil className="me-2 h-4 w-4" />
                                 {t("common.edit")}
                               </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => openResetPassword(account)}>
+                                <KeyRound className="me-2 h-4 w-4" />
+                                {t("accounts.resetPassword")}
+                              </DropdownMenuItem>
                               <DropdownMenuItem
                                 onClick={() => openDelete(account)}
                                 className="text-destructive focus:text-destructive"
@@ -379,6 +406,30 @@ const AccountsTable = () => {
             <Button onClick={handleSyncRetry} disabled={syncing}>
               {syncing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
               {t("accounts.syncToDb")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reset Password Confirmation Dialog */}
+      <Dialog open={isResetPasswordOpen} onOpenChange={setIsResetPasswordOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("accounts.resetPasswordConfirm")}</DialogTitle>
+            <DialogDescription>{t("accounts.resetPasswordWarning")}</DialogDescription>
+          </DialogHeader>
+          {resetTarget && (
+            <p className="text-sm text-muted-foreground">
+              {resetTarget.full_name} ({resetTarget.email})
+            </p>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsResetPasswordOpen(false)} disabled={resettingPassword}>
+              {t("common.cancel")}
+            </Button>
+            <Button onClick={handleResetPassword} disabled={resettingPassword}>
+              {resettingPassword && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {t("accounts.resetPassword")}
             </Button>
           </DialogFooter>
         </DialogContent>
