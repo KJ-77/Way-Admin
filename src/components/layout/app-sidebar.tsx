@@ -9,6 +9,7 @@ import {
   Package,
   ScrollText,
   GraduationCap,
+  Shapes,
   Settings,
   UserCog,
   Palette,
@@ -66,6 +67,7 @@ const AppSidebar = () => {
     { title: t("nav.packages"), url: "/packages", icon: Package },
     { title: t("nav.subscriptions"), url: "/subscriptions", icon: ScrollText },
     { title: t("nav.tutors"), url: "/tutors", icon: GraduationCap },
+    { title: t("nav.items"), url: "/items", icon: Shapes },
   ]
 
   const isActive = (url: string) => {

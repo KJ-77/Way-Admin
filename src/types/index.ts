@@ -86,14 +86,31 @@ export interface ActivityItem {
   timestamp: string
 }
 
-export interface ScheduleEvent {
+export interface ScheduleSlot {
   id: number
-  date: string
-  startTime: string
-  duration: number
+  day_of_week: number  // 0=Monday, 6=Sunday
+  start_time: string   // "HH:MM:SS" from Postgres
+  end_time: string
   title: string
-  tutorId: number
-  classType: ClassType
+  tutor_id: number | null
+  package_id: number | null
+  tutor_name: string | null
+  package_name: string | null
+  created_at: string
+  updated_at: string
+}
+
+// Item stage progression: drying → bisque fired → waiting glaze → glaze fired → ready
+export type ItemStage = "drying" | "bisque fired" | "waiting glaze" | "glaze fired" | "ready"
+
+export interface Item {
+  id: number
+  user_id: string
+  stage: ItemStage
+  created_at: string
+  updated_at: string
+  // Joined from users table
+  user_name: string
 }
 
 export type AccountRole = "admin" | "studio-manager"

@@ -1,35 +1,40 @@
-import { Fragment } from "react"
+import { Fragment, useMemo } from "react"
 import { useTranslation } from "react-i18next"
 import { Link } from "react-router-dom"
 import { ArrowRight } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { scheduleEvents, getTutorName } from "@/data/mock-data"
-import type { ClassType } from "@/types"
+import { useSchedule } from "@/hooks/use-schedule"
 
-const classTypeStyles: Record<ClassType, string> = {
-  pottery: "bg-chart-1/80",
-  glass: "bg-chart-2/80",
-  canvas: "bg-chart-3/80",
-  "mixed-media": "bg-chart-4/80",
+// Mon-Sun (day_of_week 0-6)
+const DAY_SHORT_KEYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] as const
+
+// Representative time rows for the compact dashboard widget
+const TIME_SLOTS = ["10:00", "14:00", "16:00"]
+
+/** Check if a slot's start_time matches a given "HH:MM" string */
+function startsAt(slotTime: string, target: string): boolean {
+  // slotTime may be "HH:MM" or "HH:MM:SS"
+  return slotTime.slice(0, 5) === target
 }
-
-const days = [
-  { key: "mon", date: "2025-03-10" },
-  { key: "tue", date: "2025-03-11" },
-  { key: "wed", date: "2025-03-12" },
-  { key: "thu", date: "2025-03-13" },
-  { key: "fri", date: "2025-03-14" },
-  { key: "sat", date: "2025-03-15" },
-]
-
-const timeSlots = ["10:00", "14:00", "16:00"]
 
 const WeeklyCalendar = () => {
   const { t } = useTranslation()
+  const { slots } = useSchedule()
 
-  const getEvent = (date: string, time: string) =>
-    scheduleEvents.find(e => e.date === date && e.startTime === time)
+  // Group slots by day_of_week for O(1) lookup per day
+  const slotsByDay = useMemo(() => {
+    const map = new Map<number, typeof slots>()
+    for (let d = 0; d < 7; d++) map.set(d, [])
+    for (const slot of slots) {
+      map.get(slot.day_of_week)?.push(slot)
+    }
+    return map
+  }, [slots])
+
+  /** Find a slot for a specific day + time intersection */
+  const getSlot = (dayIdx: number, time: string) =>
+    (slotsByDay.get(dayIdx) ?? []).find(s => startsAt(s.start_time, time))
 
   return (
     <Card>
@@ -39,41 +44,41 @@ const WeeklyCalendar = () => {
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="rounded-lg border overflow-hidden">
-          <div className="grid grid-cols-[2.5rem_repeat(6,1fr)]">
+          <div className="grid grid-cols-[2.5rem_repeat(7,1fr)]">
             {/* Day headers */}
             <div className="border-b border-e bg-muted/30 p-1" />
-            {days.map((day, i) => (
+            {DAY_SHORT_KEYS.map((key, i) => (
               <div
-                key={day.key}
-                className={`border-b ${i < days.length - 1 ? "border-e" : ""} bg-muted/30 p-1.5 text-center`}
+                key={key}
+                className={`border-b ${i < DAY_SHORT_KEYS.length - 1 ? "border-e" : ""} bg-muted/30 p-1.5 text-center`}
               >
                 <span className="text-[10px] font-medium text-muted-foreground">
-                  {t(`schedule.${day.key}`)}
+                  {t(`schedule.${key}`)}
                 </span>
               </div>
             ))}
 
             {/* Time rows */}
-            {timeSlots.map((time, rowIdx) => (
+            {TIME_SLOTS.map((time, rowIdx) => (
               <Fragment key={time}>
                 <div
-                  className={`${rowIdx < timeSlots.length - 1 ? "border-b" : ""} border-e p-1 flex items-center justify-end`}
+                  className={`${rowIdx < TIME_SLOTS.length - 1 ? "border-b" : ""} border-e p-1 flex items-center justify-end`}
                 >
                   <span className="text-[10px] text-muted-foreground tabular-nums">
                     {time.slice(0, -3)}
                   </span>
                 </div>
-                {days.map((day, colIdx) => {
-                  const event = getEvent(day.date, time)
+                {DAY_SHORT_KEYS.map((_, dayIdx) => {
+                  const slot = getSlot(dayIdx, time)
                   return (
                     <div
-                      key={`${day.date}-${time}`}
-                      className={`${rowIdx < timeSlots.length - 1 ? "border-b" : ""} ${colIdx < days.length - 1 ? "border-e" : ""} p-0.5 min-h-[2.25rem] flex items-center justify-center`}
+                      key={`${dayIdx}-${time}`}
+                      className={`${rowIdx < TIME_SLOTS.length - 1 ? "border-b" : ""} ${dayIdx < DAY_SHORT_KEYS.length - 1 ? "border-e" : ""} p-0.5 min-h-[2.25rem] flex items-center justify-center`}
                     >
-                      {event && (
+                      {slot && (
                         <div
-                          className={`w-full h-6 rounded-sm ${classTypeStyles[event.classType]}`}
-                          title={`${event.title}\n${getTutorName(event.tutorId)}\n${event.startTime}`}
+                          className="w-full h-6 rounded-sm bg-primary/60"
+                          title={`${slot.title}\n${slot.tutor_name ?? t("schedule.noTutor")}\n${time}`}
                         />
                       )}
                     </div>
@@ -82,18 +87,6 @@ const WeeklyCalendar = () => {
               </Fragment>
             ))}
           </div>
-        </div>
-
-        {/* Legend */}
-        <div className="flex flex-wrap gap-x-3 gap-y-1">
-          {(Object.keys(classTypeStyles) as ClassType[]).map(type => (
-            <div key={type} className="flex items-center gap-1">
-              <div className={`h-2 w-2 rounded-sm ${classTypeStyles[type]}`} />
-              <span className="text-[10px] text-muted-foreground capitalize">
-                {type === "mixed-media" ? "Mixed" : type}
-              </span>
-            </div>
-          ))}
         </div>
 
         {/* View Full Schedule */}

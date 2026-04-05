@@ -13,6 +13,7 @@ import PackagesPage from "@/pages/packages"
 import SubscriptionsPage from "@/pages/subscriptions"
 import TutorsPage from "@/pages/tutors"
 import SchedulePage from "@/pages/schedule"
+import ItemsPage from "@/pages/items"
 import AccountsPage from "@/pages/accounts"
 import UserDetailPage from "@/pages/user-detail"
 import NotFound from "@/pages/not-found"
@@ -39,6 +40,7 @@ const App = () => {
                         <Route path="/subscriptions" element={<SubscriptionsPage />} />
                         <Route path="/tutors" element={<TutorsPage />} />
                         <Route path="/schedule" element={<SchedulePage />} />
+                        <Route path="/items" element={<ItemsPage />} />
                         <Route
                           path="/accounts"
                           element={

@@ -96,8 +96,8 @@ export function useAccounts() {
     return response.json() as Promise<AdminAccount>
   }
 
-  // Admin-initiated password reset — triggers Cognito to email a verification code
-  const resetPassword = async (id: string) => {
+  // Admin-initiated password reset — sets a temp password and puts user in FORCE_CHANGE_PASSWORD state
+  const resetPassword = async (id: string): Promise<{ tempPassword: string }> => {
     const response = await apiFetch(`/accounts/${id}/reset-password`, {
       method: "POST",
     })

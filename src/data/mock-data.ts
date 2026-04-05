@@ -1,4 +1,4 @@
-import type { User, UserPackage, Tutor, ActivityItem, ScheduleEvent } from "@/types"
+import type { User, UserPackage, Tutor, ActivityItem } from "@/types"
 
 // Mock session shape — kept for dashboard placeholders until real API integration
 interface MockSession {
@@ -264,26 +264,4 @@ export const clientGrowthData = [
   { month: "Mar", clients: 12 },
 ]
 
-export const scheduleEvents: ScheduleEvent[] = [
-  // Monday 2025-03-10
-  { id: 1, date: "2025-03-10", startTime: "10:00", duration: 120, title: "Pottery Group A", tutorId: 1, classType: "pottery" },
-  { id: 2, date: "2025-03-10", startTime: "14:00", duration: 120, title: "Glass Workshop", tutorId: 2, classType: "glass" },
-  // Tuesday 2025-03-11
-  { id: 3, date: "2025-03-11", startTime: "10:00", duration: 120, title: "Canvas Studio", tutorId: 1, classType: "canvas" },
-  { id: 4, date: "2025-03-11", startTime: "14:00", duration: 120, title: "Pottery Basics", tutorId: 3, classType: "pottery" },
-  { id: 5, date: "2025-03-11", startTime: "16:00", duration: 90, title: "Mixed Media Intro", tutorId: 4, classType: "mixed-media" },
-  // Wednesday 2025-03-12
-  { id: 6, date: "2025-03-12", startTime: "10:00", duration: 120, title: "Pottery Advanced", tutorId: 1, classType: "pottery" },
-  { id: 7, date: "2025-03-12", startTime: "14:00", duration: 120, title: "Glass Art", tutorId: 2, classType: "glass" },
-  // Thursday 2025-03-13
-  { id: 8, date: "2025-03-13", startTime: "10:00", duration: 120, title: "Pottery Group B", tutorId: 1, classType: "pottery" },
-  { id: 9, date: "2025-03-13", startTime: "14:00", duration: 120, title: "Glass Basics", tutorId: 2, classType: "glass" },
-  { id: 10, date: "2025-03-13", startTime: "16:00", duration: 120, title: "Canvas Painting", tutorId: 3, classType: "canvas" },
-  // Friday 2025-03-14
-  { id: 11, date: "2025-03-14", startTime: "10:00", duration: 120, title: "Pottery Workshop", tutorId: 1, classType: "pottery" },
-  { id: 12, date: "2025-03-14", startTime: "14:00", duration: 90, title: "Mixed Media Lab", tutorId: 4, classType: "mixed-media" },
-  // Saturday 2025-03-15
-  { id: 13, date: "2025-03-15", startTime: "10:00", duration: 120, title: "Pottery Open Studio", tutorId: 1, classType: "pottery" },
-  { id: 14, date: "2025-03-15", startTime: "14:00", duration: 120, title: "Glass Workshop", tutorId: 2, classType: "glass" },
-]
 
