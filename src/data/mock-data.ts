@@ -1,4 +1,4 @@
-import type { User, UserPackage, Tutor, ActivityItem } from "@/types"
+import type { User, UserPackage, ActivityItem } from "@/types"
 
 // Mock session shape — kept for dashboard placeholders until real API integration
 interface MockSession {
@@ -14,13 +14,6 @@ interface MockSession {
   attendance: string
   notes?: string
 }
-
-export const tutors: Tutor[] = [
-  { id: 1, full_name: "Layla Khoury", email: "layla@way-studio.com", phone: "+961 71 234 567" },
-  { id: 2, full_name: "Omar Haddad", email: "omar@way-studio.com", phone: "+961 71 345 678" },
-  { id: 3, full_name: "Nadia Saab", email: "nadia@way-studio.com", phone: "+961 71 456 789" },
-  { id: 4, full_name: "Rami Farah", email: "rami@way-studio.com", phone: "+961 71 567 890" },
-]
 
 export const users: User[] = [
   {
@@ -204,12 +197,6 @@ export function getUserName(userId: string): string {
   return users.find(u => u.id === userId)?.full_name ?? "Unknown"
 }
 
-// Helper to get tutor name by ID
-export function getTutorName(tutorId: number | null): string {
-  if (tutorId === null) return "None"
-  return tutors.find(t => t.id === tutorId)?.full_name ?? "Unknown"
-}
-
 // Stats calculations
 export const stats = {
   totalClients: users.length,
@@ -217,7 +204,7 @@ export const stats = {
   totalSessions: sessions.length,
   todaySessions: sessions.filter(s => s.date === "2025-03-13").length,
   activePackages: userPackages.filter(p => p.status === "active").length,
-  totalTutors: tutors.length,
+  totalTutors: 0,
   attendanceRate: Math.round((sessions.filter(s => s.attendance === "present").length / sessions.length) * 100),
   vipClients: users.filter(u => u.loyalty === "High").length,
 }

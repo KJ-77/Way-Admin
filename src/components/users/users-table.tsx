@@ -23,12 +23,12 @@ import {
 } from "@/components/ui/dialog"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import AddUserDialog from "@/components/users/add-user-dialog"
-import { getTutorName } from "@/data/mock-data"
-import type { User, UserStatus, Level, Section } from "@/types"
+import type { User, Tutor, UserStatus, Level, Section } from "@/types"
 import type { CreateUserResponse } from "@/hooks/use-users"
 
 interface UsersTableProps {
   users: User[]
+  tutors: Tutor[]
   loading: boolean
   error: string | null
   onRefetch: () => void
@@ -54,7 +54,7 @@ const loyaltyColors: Record<string, string> = {
   High: "bg-amber-500/15 text-amber-400 border-amber-500/30",
 }
 
-const UsersTable = ({ users, loading, error, onRefetch, onCreateUser, onUpdateUser, onDeleteUser }: UsersTableProps) => {
+const UsersTable = ({ users, tutors, loading, error, onRefetch, onCreateUser, onUpdateUser, onDeleteUser }: UsersTableProps) => {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const [search, setSearch] = useState("")
@@ -250,7 +250,7 @@ const UsersTable = ({ users, loading, error, onRefetch, onCreateUser, onUpdateUs
                           ) : <span className="text-sm text-muted-foreground">—</span>}
                         </TableCell>
                         <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
-                          {getTutorName(user.preferred_tutor ?? null)}
+                          {user.preferred_tutor != null ? (tutors.find(t => t.id === user.preferred_tutor)?.full_name ?? "Unknown") : "—"}
                         </TableCell>
                         <TableCell onClick={(e) => e.stopPropagation()}>
                           <DropdownMenu>

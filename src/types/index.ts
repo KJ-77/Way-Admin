@@ -76,6 +76,9 @@ export interface Tutor {
   full_name: string
   email: string
   phone: string
+  hourly_rate: number | null
+  specialty: string | null
+  notes: string | null
 }
 
 export interface ActivityItem {
@@ -103,10 +106,13 @@ export interface ScheduleSlot {
 // Item stage progression: drying → bisque fired → waiting glaze → glaze fired → ready
 export type ItemStage = "drying" | "bisque fired" | "waiting glaze" | "glaze fired" | "ready"
 
+export type ItemSection = "Studio" | "PC"
+
 export interface Item {
   id: number
   user_id: string
   stage: ItemStage
+  section: ItemSection
   created_at: string
   updated_at: string
   // Joined from users table

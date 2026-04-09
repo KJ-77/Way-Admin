@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react"
 import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
-import { CalendarPlus, PackagePlus, Loader2 } from "lucide-react"
+import { CalendarPlus, PackagePlus, Pencil, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -13,17 +13,20 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog"
 import { apiFetch } from "@/lib/api"
+import AddUserDialog from "@/components/users/add-user-dialog"
 import type { User, UserPackage, Package } from "@/types"
+import type { CreateUserResponse } from "@/hooks/use-users"
 
 interface UserDetailQuickActionsProps {
   user: User
   subscriptions: UserPackage[]
   onSessionCreated: () => void
   onSubscriptionCreated: () => void
+  onUserUpdated: () => void
 }
 
 const UserDetailQuickActions = ({
-  user, subscriptions, onSessionCreated, onSubscriptionCreated,
+  user, subscriptions, onSessionCreated, onSubscriptionCreated, onUserUpdated,
 }: UserDetailQuickActionsProps) => {
   const { t } = useTranslation()
 
@@ -41,6 +44,26 @@ const UserDetailQuickActions = ({
   const [subscribeSaving, setSubscribeSaving] = useState(false)
   const [packages, setPackages] = useState<Package[]>([])
   const [loadingPkgs, setLoadingPkgs] = useState(false)
+
+  // ── Edit user dialog state ──
+  const [editOpen, setEditOpen] = useState(false)
+
+  // Inline update handler — matches the signature AddUserDialog expects
+  const handleUpdateUser = async (id: string, body: Record<string, unknown>): Promise<User> => {
+    const response = await apiFetch(`/users/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(body),
+    })
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null)
+      const errorMsg = errorData?.message || errorData?.error || `Failed to update client: ${response.status}`
+      throw new Error(errorMsg)
+    }
+    return response.json()
+  }
+
+  // Stub — never called since dialog opens in edit mode only
+  const stubCreateUser = (() => Promise.reject(new Error("Not supported"))) as () => Promise<CreateUserResponse>
 
   // Fetch packages when subscribe dialog opens
   useEffect(() => {
@@ -122,6 +145,15 @@ const UserDetailQuickActions = ({
     <>
       {/* Action buttons */}
       <div className="flex gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-1.5"
+          onClick={() => setEditOpen(true)}
+        >
+          <Pencil className="h-3.5 w-3.5" />
+          {t("users.edit")}
+        </Button>
         <Button
           variant="outline"
           size="sm"
@@ -290,6 +322,16 @@ const UserDetailQuickActions = ({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* ── Edit User Dialog ── */}
+      <AddUserDialog
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        onSuccess={onUserUpdated}
+        onCreateUser={stubCreateUser}
+        onUpdateUser={handleUpdateUser}
+        editingUser={user}
+      />
     </>
   )
 }

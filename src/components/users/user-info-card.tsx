@@ -1,15 +1,15 @@
-import { format } from "date-fns"
+import { format, differenceInYears } from "date-fns"
 import {
   User as UserIcon, Heart, GraduationCap, Briefcase, Calendar, Clock,
   MessageSquare, Users,
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
-import { getTutorName } from "@/data/mock-data"
-import type { User } from "@/types"
+import type { User, Tutor } from "@/types"
 
 interface UserInfoCardProps {
   user: User
+  tutors: Tutor[]
 }
 
 interface InfoRowProps {
@@ -37,7 +37,24 @@ const formatDate = (dateStr: string | undefined) => {
   }
 }
 
-const UserInfoCard = ({ user }: UserInfoCardProps) => {
+// Format DOB with age in parentheses: "May 15, 1998 (27)"
+const formatDob = (dateStr: string | undefined) => {
+  if (!dateStr) return "—"
+  try {
+    const date = new Date(dateStr)
+    const formatted = format(date, "MMM d, yyyy")
+    const age = differenceInYears(new Date(), date)
+    return `${formatted} (${age})`
+  } catch {
+    return dateStr
+  }
+}
+
+const UserInfoCard = ({ user, tutors }: UserInfoCardProps) => {
+  const tutorName = user.preferred_tutor != null
+    ? (tutors.find(t => t.id === user.preferred_tutor)?.full_name ?? "Unknown")
+    : "None"
+
   return (
     <Card>
       <CardHeader>
@@ -49,7 +66,7 @@ const UserInfoCard = ({ user }: UserInfoCardProps) => {
           <div>
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Personal</p>
             <InfoRow icon={UserIcon} label="Gender" value={user.gender || "—"} />
-            <InfoRow icon={Calendar} label="Date of Birth" value={formatDate(user.dob)} />
+            <InfoRow icon={Calendar} label="Date of Birth" value={formatDob(user.dob)} />
             <InfoRow icon={GraduationCap} label="Level" value={user.level || "—"} />
           </div>
 
@@ -65,7 +82,7 @@ const UserInfoCard = ({ user }: UserInfoCardProps) => {
           <div>
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">System</p>
             <InfoRow icon={Calendar} label="First Visit" value={formatDate(user.first_visit)} />
-            <InfoRow icon={UserIcon} label="Preferred Tutor" value={getTutorName(user.preferred_tutor ?? null)} />
+            <InfoRow icon={UserIcon} label="Preferred Tutor" value={tutorName} />
             <InfoRow icon={Clock} label="Last Updated" value={formatDate(user.updated_at)} />
           </div>
         </div>

@@ -24,10 +24,11 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import type { Item, ItemStage, User } from "@/types"
+import type { Item, ItemStage, ItemSection, User } from "@/types"
 
 // ── Stage progression order ──
 const STAGES: ItemStage[] = ["drying", "bisque fired", "waiting glaze", "glaze fired", "ready"]
+const SECTIONS: ItemSection[] = ["Studio", "PC"]
 
 // Returns the next stage or null if already at "ready"
 function getNextStage(current: ItemStage): ItemStage | null {
@@ -78,7 +79,9 @@ const ItemsTable = ({
   // Create dialog
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [createUserId, setCreateUserId] = useState("")
+  const [createSection, setCreateSection] = useState<ItemSection | "">("")
   const [saving, setSaving] = useState(false)
+  const [sectionFilter, setSectionFilter] = useState<string>("all")
 
   // Advance stage dialog
   const [advanceTarget, setAdvanceTarget] = useState<Item | null>(null)
@@ -100,21 +103,23 @@ const ItemsTable = ({
         item.user_name?.toLowerCase().includes(search.toLowerCase()) ||
         String(item.id).includes(search)
       const matchesStage = stageFilter === "all" || item.stage === stageFilter
-      return matchesSearch && matchesStage
+      const matchesSection = sectionFilter === "all" || item.section === sectionFilter
+      return matchesSearch && matchesStage && matchesSection
     })
-  }, [items, search, stageFilter])
+  }, [items, search, stageFilter, sectionFilter])
 
   // ── Handlers ──
 
   const openCreate = () => {
     setCreateUserId("")
+    setCreateSection("")
     setIsCreateOpen(true)
   }
 
   const handleCreate = async () => {
     setSaving(true)
     try {
-      await onCreateItem({ user_id: createUserId })
+      await onCreateItem({ user_id: createUserId, section: createSection })
       toast.success(t("items.createSuccess"))
       setIsCreateOpen(false)
       onRefetch()
@@ -210,6 +215,17 @@ const ItemsTable = ({
                 className="ps-9"
               />
             </div>
+            <Select value={sectionFilter} onValueChange={setSectionFilter}>
+              <SelectTrigger className="w-[140px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t("items.allSections")}</SelectItem>
+                {SECTIONS.map((s) => (
+                  <SelectItem key={s} value={s}>{s}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Select value={stageFilter} onValueChange={setStageFilter}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue />
@@ -243,6 +259,7 @@ const ItemsTable = ({
                   <TableRow>
                     <TableHead className="w-[60px]">ID</TableHead>
                     <TableHead>{t("items.client")}</TableHead>
+                    <TableHead>{t("items.section")}</TableHead>
                     <TableHead>{t("items.stage")}</TableHead>
                     <TableHead className="hidden md:table-cell">{t("items.created")}</TableHead>
                     <TableHead className="hidden md:table-cell">{t("items.updated")}</TableHead>
@@ -253,7 +270,7 @@ const ItemsTable = ({
                 <TableBody>
                   {filtered.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                         {t("common.noResults")}
                       </TableCell>
                     </TableRow>
@@ -268,6 +285,9 @@ const ItemsTable = ({
                         >
                           <TableCell className="font-mono text-xs">{item.id}</TableCell>
                           <TableCell className="font-medium">{item.user_name || item.user_id}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className="text-xs">{item.section}</Badge>
+                          </TableCell>
                           <TableCell>
                             <Badge variant="outline" className={stageBadgeVariant[item.stage]}>
                               {t(`items.stage_${item.stage.replace(" ", "_")}`)}
@@ -354,6 +374,19 @@ const ItemsTable = ({
                 </SelectContent>
               </Select>
             </div>
+            <div className="grid gap-2">
+              <Label>{t("items.section")}</Label>
+              <Select value={createSection} onValueChange={(v) => setCreateSection(v as ItemSection)}>
+                <SelectTrigger>
+                  <SelectValue placeholder={t("items.selectSection")} />
+                </SelectTrigger>
+                <SelectContent>
+                  {SECTIONS.map((s) => (
+                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <p className="text-sm text-muted-foreground">
               {t("items.createHint")}
             </p>
@@ -362,7 +395,7 @@ const ItemsTable = ({
             <Button variant="outline" onClick={() => setIsCreateOpen(false)} disabled={saving}>
               {t("common.cancel")}
             </Button>
-            <Button onClick={handleCreate} disabled={!createUserId || saving}>
+            <Button onClick={handleCreate} disabled={!createUserId || !createSection || saving}>
               {saving && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
               {t("common.create")}
             </Button>
