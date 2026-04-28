@@ -24,16 +24,25 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import type { Item, ItemStage, ItemSection, User } from "@/types"
+import UserCombobox from "@/components/ui/user-combobox"
+import type { Item, ItemStage, ItemSection, ClayType, User } from "@/types"
 
-// ── Stage progression order ──
-const STAGES: ItemStage[] = ["drying", "bisque fired", "waiting glaze", "glaze fired", "ready"]
+const CLAY_TYPES: ClayType[] = ["lf-clb-white", "lf-sio-brown", "hf-prai-white", "lf-pa-white"]
+
+type SortOption = "id" | "created_desc" | "created_asc"
+
+// ── Stage definitions ──
+// Normal progression (advance button follows this order)
+const PROGRESSION_STAGES: ItemStage[] = ["drying", "bisque fired", "waiting glaze", "glaze fired", "ready"]
+// All stages including terminal "discarded" (used in filters + edit dropdown)
+const ALL_STAGES: ItemStage[] = [...PROGRESSION_STAGES, "discarded"]
 const SECTIONS: ItemSection[] = ["Studio", "PC"]
 
-// Returns the next stage or null if already at "ready"
+// Returns the next stage in the normal progression, or null if terminal/discarded
 function getNextStage(current: ItemStage): ItemStage | null {
-  const idx = STAGES.indexOf(current)
-  return idx < STAGES.length - 1 ? STAGES[idx + 1] : null
+  const idx = PROGRESSION_STAGES.indexOf(current)
+  if (idx === -1) return null // discarded or unknown → no next step
+  return idx < PROGRESSION_STAGES.length - 1 ? PROGRESSION_STAGES[idx + 1] : null
 }
 
 // Badge color per stage
@@ -43,6 +52,7 @@ const stageBadgeVariant: Record<ItemStage, string> = {
   "waiting glaze": "bg-blue-500/15 text-blue-500 border-blue-500/30",
   "glaze fired": "bg-purple-500/15 text-purple-500 border-purple-500/30",
   "ready": "bg-green-500/15 text-green-500 border-green-500/30",
+  "discarded": "bg-red-500/15 text-red-400 border-red-500/30",
 }
 
 function formatDateTime(dateStr: string) {
@@ -75,13 +85,16 @@ const ItemsTable = ({
   // ── State ──
   const [search, setSearch] = useState("")
   const [stageFilter, setStageFilter] = useState<string>("all")
+  const [sectionFilter, setSectionFilter] = useState<string>("all")
+  const [sortBy, setSortBy] = useState<SortOption>("id")
 
   // Create dialog
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [createUserId, setCreateUserId] = useState("")
   const [createSection, setCreateSection] = useState<ItemSection | "">("")
+  const [createDescription, setCreateDescription] = useState("")
+  const [createClay, setCreateClay] = useState("")
   const [saving, setSaving] = useState(false)
-  const [sectionFilter, setSectionFilter] = useState<string>("all")
 
   // Advance stage dialog
   const [advanceTarget, setAdvanceTarget] = useState<Item | null>(null)
@@ -90,36 +103,50 @@ const ItemsTable = ({
   // Edit dialog
   const [editTarget, setEditTarget] = useState<Item | null>(null)
   const [editStage, setEditStage] = useState<ItemStage>("drying")
+  const [editDescription, setEditDescription] = useState("")
+  const [editClay, setEditClay] = useState("")
   const [editSaving, setEditSaving] = useState(false)
 
   // Delete dialog
   const [deleteTarget, setDeleteTarget] = useState<Item | null>(null)
   const [deleting, setDeleting] = useState(false)
 
-  // ── Filtering ──
+  // ── Filtering + sorting ──
   const filtered = useMemo(() => {
-    return items.filter((item) => {
+    const result = items.filter((item) => {
       const matchesSearch = !search ||
         item.user_name?.toLowerCase().includes(search.toLowerCase()) ||
-        String(item.id).includes(search)
+        item.id.toString(16).toUpperCase().includes(search.toUpperCase())
       const matchesStage = stageFilter === "all" || item.stage === stageFilter
       const matchesSection = sectionFilter === "all" || item.section === sectionFilter
       return matchesSearch && matchesStage && matchesSection
     })
-  }, [items, search, stageFilter, sectionFilter])
+    // Sort: id (default), or by created_at date
+    if (sortBy === "created_desc") result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    else if (sortBy === "created_asc") result.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+    else result.sort((a, b) => a.id - b.id)
+    return result
+  }, [items, search, stageFilter, sectionFilter, sortBy])
 
   // ── Handlers ──
 
   const openCreate = () => {
     setCreateUserId("")
     setCreateSection("")
+    setCreateDescription("")
+    setCreateClay("")
     setIsCreateOpen(true)
   }
 
   const handleCreate = async () => {
     setSaving(true)
     try {
-      await onCreateItem({ user_id: createUserId, section: createSection })
+      await onCreateItem({
+        user_id: createUserId,
+        section: createSection,
+        description: createDescription || null,
+        clay_type: createClay || null,
+      })
       toast.success(t("items.createSuccess"))
       setIsCreateOpen(false)
       onRefetch()
@@ -155,13 +182,19 @@ const ItemsTable = ({
   const openEdit = (item: Item) => {
     setEditTarget(item)
     setEditStage(item.stage)
+    setEditDescription(item.description ?? "")
+    setEditClay(item.clay_type ?? "")
   }
 
   const handleEdit = async () => {
     if (!editTarget) return
     setEditSaving(true)
     try {
-      await onUpdateItem(editTarget.id, { stage: editStage })
+      await onUpdateItem(editTarget.id, {
+        stage: editStage,
+        description: editDescription || null,
+        clay_type: editClay || null,
+      })
       toast.success(t("items.updateSuccess"))
       setEditTarget(null)
       onRefetch()
@@ -232,9 +265,19 @@ const ItemsTable = ({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{t("items.allStages")}</SelectItem>
-                {STAGES.map((s) => (
+                {ALL_STAGES.map((s) => (
                   <SelectItem key={s} value={s}>{t(`items.stage_${s.replace(" ", "_")}`)}</SelectItem>
                 ))}
+              </SelectContent>
+            </Select>
+            <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="id">{t("items.sortById")}</SelectItem>
+                <SelectItem value="created_desc">{t("items.sortNewest")}</SelectItem>
+                <SelectItem value="created_asc">{t("items.sortOldest")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -283,7 +326,7 @@ const ItemsTable = ({
                           className="cursor-pointer hover:bg-muted/50"
                           onClick={() => navigate(`/users/${item.user_id}`)}
                         >
-                          <TableCell className="font-mono text-xs">{item.id}</TableCell>
+                          <TableCell className="font-mono text-xs">{item.id.toString(16).toUpperCase()}</TableCell>
                           <TableCell className="font-medium">{item.user_name || item.user_id}</TableCell>
                           <TableCell>
                             <Badge variant="outline" className="text-xs">{item.section}</Badge>
@@ -310,6 +353,10 @@ const ItemsTable = ({
                                 <ChevronRight className="h-3 w-3" />
                                 {t(`items.stage_${nextStage.replace(" ", "_")}`)}
                               </Button>
+                            ) : item.stage === "discarded" ? (
+                              <Badge variant="outline" className={stageBadgeVariant["discarded"]}>
+                                {t("items.stage_discarded")}
+                              </Badge>
                             ) : (
                               <Badge variant="outline" className={stageBadgeVariant["ready"]}>
                                 {t("items.complete")}
@@ -363,16 +410,12 @@ const ItemsTable = ({
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
               <Label>{t("items.client")}</Label>
-              <Select value={createUserId} onValueChange={setCreateUserId}>
-                <SelectTrigger>
-                  <SelectValue placeholder={t("items.selectClient")} />
-                </SelectTrigger>
-                <SelectContent>
-                  {users.map((u) => (
-                    <SelectItem key={u.id} value={u.id}>{u.full_name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <UserCombobox
+                users={users}
+                value={createUserId}
+                onValueChange={setCreateUserId}
+                placeholder={t("items.selectClient")}
+              />
             </div>
             <div className="grid gap-2">
               <Label>{t("items.section")}</Label>
@@ -383,6 +426,28 @@ const ItemsTable = ({
                 <SelectContent>
                   {SECTIONS.map((s) => (
                     <SelectItem key={s} value={s}>{s}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {/* Optional metadata fields */}
+            <div className="grid gap-2">
+              <Label>{t("items.description")}</Label>
+              <Input
+                value={createDescription}
+                onChange={(e) => setCreateDescription(e.target.value)}
+                placeholder={t("items.descriptionPlaceholder")}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label>{t("items.clayType")}</Label>
+              <Select value={createClay} onValueChange={setCreateClay}>
+                <SelectTrigger>
+                  <SelectValue placeholder={t("items.selectClayType")} />
+                </SelectTrigger>
+                <SelectContent>
+                  {CLAY_TYPES.map((c) => (
+                    <SelectItem key={c} value={c}>{t(`items.clay_${c.replace(/-/g, "_")}`)}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -423,7 +488,7 @@ const ItemsTable = ({
           )}
           {advanceTarget && (
             <p className="text-sm text-muted-foreground">
-              {advanceTarget.user_name} — #{advanceTarget.id}
+              {advanceTarget.user_name} — #{advanceTarget.id.toString(16).toUpperCase()}
             </p>
           )}
           <DialogFooter>
@@ -448,7 +513,7 @@ const ItemsTable = ({
           {editTarget && (
             <div className="grid gap-4 py-4">
               <div className="text-sm text-muted-foreground">
-                {editTarget.user_name} — #{editTarget.id}
+                {editTarget.user_name} — #{editTarget.id.toString(16).toUpperCase()}
               </div>
               <div className="grid gap-2">
                 <Label>{t("items.stage")}</Label>
@@ -457,8 +522,29 @@ const ItemsTable = ({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {STAGES.map((s) => (
+                    {ALL_STAGES.map((s) => (
                       <SelectItem key={s} value={s}>{t(`items.stage_${s.replace(" ", "_")}`)}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-2">
+                <Label>{t("items.description")}</Label>
+                <Input
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  placeholder={t("items.descriptionPlaceholder")}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label>{t("items.clayType")}</Label>
+                <Select value={editClay} onValueChange={setEditClay}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={t("items.selectClayType")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CLAY_TYPES.map((c) => (
+                      <SelectItem key={c} value={c}>{t(`items.clay_${c.replace(/-/g, "_")}`)}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -486,7 +572,7 @@ const ItemsTable = ({
           </DialogHeader>
           {deleteTarget && (
             <p className="text-sm text-muted-foreground">
-              {deleteTarget.user_name} — #{deleteTarget.id} ({t(`items.stage_${deleteTarget.stage.replace(" ", "_")}`)})
+              {deleteTarget.user_name} — #{deleteTarget.id.toString(16).toUpperCase()} ({t(`items.stage_${deleteTarget.stage.replace(" ", "_")}`)})
             </p>
           )}
           <DialogFooter>

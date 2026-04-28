@@ -14,9 +14,24 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select"
 import { useSchedule } from "@/hooks/use-schedule"
-import { usePackages } from "@/hooks/use-packages"
 import { apiFetch } from "@/lib/api"
 import type { ScheduleSlot, Tutor } from "@/types"
+
+// Static class type options for the schedule — must match DB enum values exactly
+const CLASS_TYPES = [
+  "hand building explorer",
+  "hand building mastery",
+  "wheel throwing explorer",
+  "open studio 1h",
+  "open studio 2h",
+  "open studio 3h",
+  "open studio membership",
+] as const
+
+/** Capitalize the first letter of each word for display */
+function titleCase(str: string): string {
+  return str.replace(/\b\w/g, c => c.toUpperCase())
+}
 
 // --- Layout constants ---
 const HOUR_HEIGHT = 64
@@ -31,21 +46,19 @@ const DAY_SHORT_KEYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] as cons
 
 // --- Form types ---
 interface SlotFormData {
-  title: string
   day_of_week: string
   start_time: string
   end_time: string
-  tutor_id: string   // "" = no tutor
-  package_id: string // "" = no package
+  tutor_id: string    // "" = no tutor
+  package: string     // "" = no package — also serves as the slot's display title
 }
 
 const emptyForm: SlotFormData = {
-  title: "",
   day_of_week: "0",
   start_time: "10:00",
   end_time: "12:00",
   tutor_id: "none",
-  package_id: "none",
+  package: "none",
 }
 
 // --- Helpers ---
@@ -82,7 +95,6 @@ function getSlotPosition(slot: ScheduleSlot) {
 const ScheduleCalendar = () => {
   const { t } = useTranslation()
   const { slots, loading, error, refetch, createSlot, updateSlot, deleteSlot } = useSchedule()
-  const { packages } = usePackages()
 
   // Tutor list fetched inline (no dedicated hook)
   const [tutors, setTutors] = useState<Tutor[]>([])
@@ -128,12 +140,11 @@ const ScheduleCalendar = () => {
   const openEdit = useCallback((slot: ScheduleSlot) => {
     setEditingSlot(slot)
     setFormData({
-      title: slot.title,
       day_of_week: String(slot.day_of_week),
       start_time: formatTime(slot.start_time),
       end_time: formatTime(slot.end_time),
       tutor_id: slot.tutor_id != null ? String(slot.tutor_id) : "none",
-      package_id: slot.package_id != null ? String(slot.package_id) : "none",
+      package: slot.package != null ? String(slot.package) : "none",
     })
     setIsFormOpen(true)
   }, [])
@@ -142,13 +153,12 @@ const ScheduleCalendar = () => {
     setSaving(true)
     try {
       const body: Record<string, unknown> = {
-        title: formData.title,
         day_of_week: Number(formData.day_of_week),
         start_time: formData.start_time, // "HH:MM"
         end_time: formData.end_time,
         // "none" sentinel or empty string both map to null
         tutor_id: formData.tutor_id && formData.tutor_id !== "none" ? Number(formData.tutor_id) : null,
-        package_id: formData.package_id && formData.package_id !== "none" ? Number(formData.package_id) : null,
+        package: formData.package && formData.package !== "none" ? formData.package : null,
       }
 
       if (editingSlot) {
@@ -317,7 +327,7 @@ const ScheduleCalendar = () => {
                             tabIndex={0}
                             onKeyDown={e => { if (e.key === "Enter") openEdit(slot) }}
                           >
-                            <p className="text-sm font-semibold truncate">{slot.title}</p>
+                            <p className="text-sm font-semibold truncate">{slot.package ? titleCase(slot.package) : t("schedule.noPackage")}</p>
                             <p className="text-xs opacity-80 truncate">
                               {slot.tutor_name ?? t("schedule.noTutor")}
                             </p>
@@ -349,14 +359,23 @@ const ScheduleCalendar = () => {
           </DialogHeader>
 
           <div className="grid gap-4 py-4">
-            {/* Title */}
+            {/* Class type dropdown — serves as the slot title */}
             <div className="grid gap-2">
-              <Label>{t("schedule.slotTitle")}</Label>
-              <Input
-                value={formData.title}
-                onChange={e => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                placeholder="e.g. Pottery Group A"
-              />
+              <Label>{t("schedule.package")}</Label>
+              <Select
+                value={formData.package}
+                onValueChange={val => setFormData(prev => ({ ...prev, package: val }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={t("schedule.noPackage")} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">{t("schedule.noPackage")}</SelectItem>
+                  {CLASS_TYPES.map(ct => (
+                    <SelectItem key={ct} value={ct}>{titleCase(ct)}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Day of Week */}
@@ -421,26 +440,6 @@ const ScheduleCalendar = () => {
               </Select>
             </div>
 
-            {/* Package dropdown */}
-            <div className="grid gap-2">
-              <Label>{t("schedule.package")}</Label>
-              <Select
-                value={formData.package_id}
-                onValueChange={val => setFormData(prev => ({ ...prev, package_id: val }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={t("schedule.noPackage")} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">{t("schedule.noPackage")}</SelectItem>
-                  {packages.map(pkg => (
-                    <SelectItem key={pkg.id} value={String(pkg.id)}>
-                      {pkg.package_type}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
           </div>
 
           <DialogFooter className="gap-2 sm:gap-0">
@@ -458,7 +457,7 @@ const ScheduleCalendar = () => {
             <Button variant="outline" onClick={() => setIsFormOpen(false)} disabled={saving}>
               {t("common.cancel")}
             </Button>
-            <Button onClick={handleSave} disabled={!formData.title || saving}>
+            <Button onClick={handleSave} disabled={!formData.package || formData.package === "none" || saving}>
               {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {editingSlot ? t("common.save") : t("common.create")}
             </Button>
@@ -475,7 +474,7 @@ const ScheduleCalendar = () => {
           </DialogHeader>
           {deleteTarget && (
             <p className="text-sm text-muted-foreground">
-              {deleteTarget.title} — {t(`schedule.${DAY_KEYS[deleteTarget.day_of_week]}`)} {formatTime(deleteTarget.start_time)}–{formatTime(deleteTarget.end_time)}
+              {deleteTarget.package ? titleCase(deleteTarget.package) : t("schedule.noPackage")} — {t(`schedule.${DAY_KEYS[deleteTarget.day_of_week]}`)} {formatTime(deleteTarget.start_time)}–{formatTime(deleteTarget.end_time)}
             </p>
           )}
           <DialogFooter>

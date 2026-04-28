@@ -25,7 +25,16 @@ import {
 } from "@/components/ui/dialog"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { apiFetch } from "@/lib/api"
+import UserCombobox from "@/components/ui/user-combobox"
 import type { Session, User, UserPackage, Attendance } from "@/types"
+
+// Maps attendance enum values to translation keys (handles the "cancelled - no charge" key)
+const attendanceKey: Record<string, string> = {
+  attended: "sessions.attended",
+  booked: "sessions.booked",
+  cancelled: "sessions.cancelled",
+  "cancelled - no charge": "sessions.cancelledNoCharge",
+}
 
 // ── Props ──
 
@@ -72,6 +81,7 @@ const attendanceColors: Record<string, string> = {
   attended: "bg-emerald-500/15 text-emerald-500 border-emerald-500/30",
   booked: "bg-amber-500/15 text-amber-400 border-amber-500/30",
   cancelled: "bg-zinc-500/15 text-zinc-400 border-zinc-500/30",
+  "cancelled - no charge": "bg-sky-500/15 text-sky-400 border-sky-500/30",
 }
 
 // ── Helpers ──
@@ -268,7 +278,7 @@ const SessionsTable = ({
               />
             </div>
             <Select value={attendanceFilter} onValueChange={(v) => setAttendanceFilter(v as Attendance | "all")}>
-              <SelectTrigger className="w-[150px]">
+              <SelectTrigger className="w-[200px]">
                 <SelectValue placeholder={t("sessions.allAttendance")} />
               </SelectTrigger>
               <SelectContent>
@@ -276,6 +286,7 @@ const SessionsTable = ({
                 <SelectItem value="attended">{t("sessions.attended")}</SelectItem>
                 <SelectItem value="booked">{t("sessions.booked")}</SelectItem>
                 <SelectItem value="cancelled">{t("sessions.cancelled")}</SelectItem>
+                <SelectItem value="cancelled - no charge">{t("sessions.cancelledNoCharge")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -339,7 +350,7 @@ const SessionsTable = ({
                             </TableCell>
                             <TableCell>
                               <Badge variant="outline" className={attendanceColors[session.attendance]}>
-                                {t(`sessions.${session.attendance}`)}
+                                {t(attendanceKey[session.attendance])}
                               </Badge>
                             </TableCell>
                             <TableCell className="hidden lg:table-cell text-sm text-muted-foreground max-w-[200px] truncate">
@@ -398,19 +409,12 @@ const SessionsTable = ({
             {/* Client selector */}
             <div className="grid gap-2">
               <Label>{t("sessions.client")}</Label>
-              <Select
+              <UserCombobox
+                users={users}
                 value={createForm.user_id}
                 onValueChange={(v) => setCreateForm(prev => ({ ...prev, user_id: v, package_id: "" }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={t("sessions.selectClient")} />
-                </SelectTrigger>
-                <SelectContent>
-                  {users.map(u => (
-                    <SelectItem key={u.id} value={u.id}>{u.full_name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                placeholder={t("sessions.selectClient")}
+              />
             </div>
 
             {/* Subscription selector — shows after client is picked */}
@@ -436,7 +440,7 @@ const SessionsTable = ({
                   <SelectContent>
                     {userSubscriptions.map(sub => (
                       <SelectItem key={sub.id} value={String(sub.package_id)}>
-                        {sub.package_name} — {sub.remaining_sessions} sessions, {sub.remaining_weight} kg left
+                        {sub.package_name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -472,6 +476,7 @@ const SessionsTable = ({
                     <SelectItem value="attended">{t("sessions.attended")}</SelectItem>
                     <SelectItem value="booked">{t("sessions.booked")}</SelectItem>
                     <SelectItem value="cancelled">{t("sessions.cancelled")}</SelectItem>
+                    <SelectItem value="cancelled - no charge">{t("sessions.cancelledNoCharge")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -527,6 +532,7 @@ const SessionsTable = ({
                     <SelectItem value="attended">{t("sessions.attended")}</SelectItem>
                     <SelectItem value="booked">{t("sessions.booked")}</SelectItem>
                     <SelectItem value="cancelled">{t("sessions.cancelled")}</SelectItem>
+                    <SelectItem value="cancelled - no charge">{t("sessions.cancelledNoCharge")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

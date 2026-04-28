@@ -239,6 +239,7 @@ const UserDetailQuickActions = ({
                     <SelectItem value="attended">{t("sessions.attended")}</SelectItem>
                     <SelectItem value="booked">{t("sessions.booked")}</SelectItem>
                     <SelectItem value="cancelled">{t("sessions.cancelled")}</SelectItem>
+                    <SelectItem value="cancelled - no charge">{t("sessions.cancelledNoCharge")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

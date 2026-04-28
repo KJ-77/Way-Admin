@@ -10,6 +10,7 @@ const stageBadgeClass: Record<ItemStage, string> = {
   "waiting glaze": "bg-blue-500/15 text-blue-500 border-blue-500/30",
   "glaze fired": "bg-purple-500/15 text-purple-500 border-purple-500/30",
   "ready": "bg-green-500/15 text-green-500 border-green-500/30",
+  "discarded": "bg-red-500/15 text-red-400 border-red-500/30",
 }
 
 interface UserDetailItemsProps {
@@ -47,7 +48,7 @@ const UserDetailItems = ({ items, loading }: UserDetailItemsProps) => {
               >
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium">#{item.id}</span>
+                    <span className="text-sm font-medium font-mono">#{item.id.toString(16).toUpperCase()}</span>
                     <Badge variant="outline" className="text-[10px]">{item.section}</Badge>
                   </div>
                   <p className="text-xs text-muted-foreground">

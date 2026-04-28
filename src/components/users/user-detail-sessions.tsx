@@ -13,6 +13,7 @@ const attendanceColors: Record<string, string> = {
   attended: "bg-emerald-500/15 text-emerald-500 border-emerald-500/30",
   booked: "bg-amber-500/15 text-amber-400 border-amber-500/30",
   cancelled: "bg-zinc-500/15 text-zinc-400 border-zinc-500/30",
+  "cancelled - no charge": "bg-sky-500/15 text-sky-400 border-sky-500/30",
 }
 
 const UserDetailSessions = ({ sessions, loading }: UserDetailSessionsProps) => {

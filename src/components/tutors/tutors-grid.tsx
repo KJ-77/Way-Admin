@@ -16,7 +16,12 @@ import {
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import type { Tutor } from "@/types"
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select"
+import type { Tutor, TutorSpecialty } from "@/types"
+
+const TUTOR_SPECIALTIES: TutorSpecialty[] = ["handbuilding", "wheelthrowing", "glazing", "sculpting"]
 
 const colors = [
   "bg-chart-1/15 text-chart-1",
@@ -209,7 +214,7 @@ const TutorsGrid = ({
                     {tutor.specialty && (
                       <div className="flex items-center gap-1.5 text-xs text-primary/80 mb-2">
                         <Sparkles className="h-3 w-3" />
-                        <span>{tutor.specialty}</span>
+                        <span>{t(`tutors.specialty_${tutor.specialty}`)}</span>
                       </div>
                     )}
 
@@ -256,6 +261,7 @@ const TutorsGrid = ({
               <Input
                 value={formData.full_name}
                 onChange={(e) => setFormData(prev => ({ ...prev, full_name: e.target.value }))}
+                placeholder="e.g. Sara Khalil"
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -265,6 +271,7 @@ const TutorsGrid = ({
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                  placeholder="tutor@example.com"
                 />
               </div>
               <div className="grid gap-2">
@@ -272,17 +279,26 @@ const TutorsGrid = ({
                 <Input
                   value={formData.phone}
                   onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                  placeholder="+96112345678"
                 />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
                 <Label>{t("tutors.specialty")}</Label>
-                <Input
+                <Select
                   value={formData.specialty}
-                  onChange={(e) => setFormData(prev => ({ ...prev, specialty: e.target.value }))}
-                  placeholder={t("tutors.specialtyPlaceholder")}
-                />
+                  onValueChange={(v) => setFormData(prev => ({ ...prev, specialty: v }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={t("tutors.specialtyPlaceholder")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {TUTOR_SPECIALTIES.map(s => (
+                      <SelectItem key={s} value={s}>{t(`tutors.specialty_${s}`)}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="grid gap-2">
                 <Label>{t("tutors.hourlyRate")}</Label>
@@ -291,6 +307,7 @@ const TutorsGrid = ({
                   step="0.01"
                   value={formData.hourly_rate}
                   onChange={(e) => setFormData(prev => ({ ...prev, hourly_rate: e.target.value }))}
+                  placeholder="e.g. 25.00"
                 />
               </div>
             </div>

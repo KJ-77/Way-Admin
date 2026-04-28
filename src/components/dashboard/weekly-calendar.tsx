@@ -12,6 +12,11 @@ const DAY_SHORT_KEYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] as cons
 // Representative time rows for the compact dashboard widget
 const TIME_SLOTS = ["10:00", "14:00", "16:00"]
 
+/** Capitalize the first letter of each word for display */
+function titleCase(str: string): string {
+  return str.replace(/\b\w/g, c => c.toUpperCase())
+}
+
 /** Check if a slot's start_time matches a given "HH:MM" string */
 function startsAt(slotTime: string, target: string): boolean {
   // slotTime may be "HH:MM" or "HH:MM:SS"
@@ -78,7 +83,7 @@ const WeeklyCalendar = () => {
                       {slot && (
                         <div
                           className="w-full h-6 rounded-sm bg-primary/60"
-                          title={`${slot.title}\n${slot.tutor_name ?? t("schedule.noTutor")}\n${time}`}
+                          title={`${slot.package ? titleCase(slot.package) : "—"}\n${slot.tutor_name ?? t("schedule.noTutor")}\n${time}`}
                         />
                       )}
                     </div>

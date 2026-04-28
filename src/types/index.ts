@@ -6,7 +6,17 @@ export type UserStatus = "Active" | "Dormant"
 export type Section = "Studio" | "PC"
 export type PackageStatus = "active" | "expired" | "depleted"
 export type ClassType = "pottery" | "glass" | "canvas" | "mixed-media"
-export type Attendance = "attended" | "booked" | "cancelled"
+export type Attendance = "attended" | "booked" | "cancelled" | "cancelled - no charge"
+export type ClayType = "lf-clb-white" | "lf-sio-brown" | "hf-prai-white" | "lf-pa-white"
+export type TutorSpecialty = "handbuilding" | "wheelthrowing" | "glazing" | "sculpting"
+export type SessionPackage =
+  | "hand building explorer"
+  | "hand building mastery"
+  | "wheel throwing explorer"
+  | "open studio 1h"
+  | "open studio 2h"
+  | "open studio 3h"
+  | "open studio membership"
 
 export interface User {
   id: string // cognito_sub
@@ -34,6 +44,7 @@ export interface Package {
   sessions_included: number
   weight_included: number
   price: number
+  notes?: string | null
 }
 
 // Client subscription — API response includes computed status + joined data
@@ -77,7 +88,7 @@ export interface Tutor {
   email: string
   phone: string
   hourly_rate: number | null
-  specialty: string | null
+  specialty: TutorSpecialty | null
   notes: string | null
 }
 
@@ -94,17 +105,16 @@ export interface ScheduleSlot {
   day_of_week: number  // 0=Monday, 6=Sunday
   start_time: string   // "HH:MM:SS" from Postgres
   end_time: string
-  title: string
   tutor_id: number | null
-  package_id: number | null
+  package: string | null  // class type enum — also serves as the slot's display title
   tutor_name: string | null
-  package_name: string | null
   created_at: string
   updated_at: string
 }
 
-// Item stage progression: drying → bisque fired → waiting glaze → glaze fired → ready
-export type ItemStage = "drying" | "bisque fired" | "waiting glaze" | "glaze fired" | "ready"
+// Item stage progression: drying → bisque firing → waiting glaze → glaze firing → ready
+// "discarded" is a terminal stage set manually via edit, not part of normal progression
+export type ItemStage = "drying" | "bisque fired" | "waiting glaze" | "glaze fired" | "ready" | "discarded"
 
 export type ItemSection = "Studio" | "PC"
 
@@ -113,6 +123,8 @@ export interface Item {
   user_id: string
   stage: ItemStage
   section: ItemSection
+  description?: string | null
+  clay_type?: ClayType | null
   created_at: string
   updated_at: string
   // Joined from users table

@@ -3,10 +3,11 @@ import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 import {
   Plus, MoreHorizontal, Pencil, Trash2, Loader2, AlertCircle,
-  CalendarDays, Weight, Package as PackageIcon,
+  CalendarDays, Weight, Package as PackageIcon, FileText,
 } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import {
@@ -32,6 +33,7 @@ interface FormData {
   sessions_included: string
   weight_included: string
   price: string
+  notes: string
 }
 
 const emptyForm: FormData = {
@@ -39,6 +41,7 @@ const emptyForm: FormData = {
   sessions_included: "",
   weight_included: "",
   price: "",
+  notes: "",
 }
 
 const PackagesTable = ({
@@ -52,6 +55,8 @@ const PackagesTable = ({
   const [formData, setFormData] = useState<FormData>(emptyForm)
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  // tracks which package cards have their notes expanded
+  const [expandedNotes, setExpandedNotes] = useState<Set<number>>(new Set())
 
   const openCreate = () => {
     setEditingPackage(null)
@@ -66,6 +71,7 @@ const PackagesTable = ({
       sessions_included: String(pkg.sessions_included ?? ""),
       weight_included: String(pkg.weight_included ?? ""),
       price: String(pkg.price ?? ""),
+      notes: pkg.notes ?? "",
     })
     setIsFormOpen(true)
   }
@@ -78,6 +84,7 @@ const PackagesTable = ({
         sessions_included: formData.sessions_included ? Number(formData.sessions_included) : null,
         weight_included: formData.weight_included ? Number(formData.weight_included) : null,
         price: formData.price ? Number(formData.price) : null,
+        notes: formData.notes || null,
       }
 
       if (editingPackage) {
@@ -175,7 +182,26 @@ const PackagesTable = ({
               <CardContent className="p-5 pt-6 flex flex-col justify-between min-h-[140px]">
                 {/* Header row — name + actions */}
                 <div className="flex items-start justify-between gap-3">
-                  <h3 className="font-bold text-lg leading-snug">{pkg.package_type}</h3>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <h3 className="font-bold text-lg leading-snug">{pkg.package_type}</h3>
+                    {/* Notes indicator — icon button toggles expand */}
+                    {pkg.notes && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setExpandedNotes(prev => {
+                            const next = new Set(prev)
+                            next.has(pkg.id) ? next.delete(pkg.id) : next.add(pkg.id)
+                            return next
+                          })
+                        }}
+                        className="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
+                        title={t("packages.toggleNotes")}
+                      >
+                        <FileText className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </div>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button
@@ -220,6 +246,13 @@ const PackagesTable = ({
                     {pkg.price != null ? `$${pkg.price}` : "—"}
                   </span>
                 </div>
+
+                {/* Expandable notes — only renders when note exists and is expanded */}
+                {pkg.notes && expandedNotes.has(pkg.id) && (
+                  <p className="mt-3 text-xs text-muted-foreground leading-relaxed border-t border-border/40 pt-3">
+                    {pkg.notes}
+                  </p>
+                )}
               </CardContent>
             </Card>
           ))}
@@ -275,6 +308,15 @@ const PackagesTable = ({
                   placeholder="$"
                 />
               </div>
+            </div>
+            <div className="grid gap-2">
+              <Label>{t("packages.notes")}</Label>
+              <Textarea
+                value={formData.notes}
+                onChange={e => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                placeholder={t("packages.notesPlaceholder")}
+                rows={3}
+              />
             </div>
           </div>
           <DialogFooter>

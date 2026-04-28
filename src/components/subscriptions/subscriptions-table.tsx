@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 import {
   Search, MoreHorizontal, PackagePlus, Pencil, Trash2,
-  Loader2, AlertCircle, AlertTriangle, Package as PackageIcon,
+  Loader2, AlertCircle, AlertTriangle, Package as PackageIcon, CalendarPlus,
 } from "lucide-react"
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -24,7 +24,10 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import type { UserPackage, User, Package, PackageStatus } from "@/types"
+import { Textarea } from "@/components/ui/textarea"
+import { apiFetch } from "@/lib/api"
+import UserCombobox from "@/components/ui/user-combobox"
+import type { UserPackage, User, Package, PackageStatus, Attendance } from "@/types"
 
 // ── Props ──
 
@@ -49,14 +52,12 @@ interface CreateFormData {
 }
 
 interface EditFormData {
-  remaining_sessions: string
-  remaining_weight: string
   expiry_date: string
   notes: string
 }
 
 const emptyCreateForm: CreateFormData = { user_id: "", package_id: "", notes: "" }
-const emptyEditForm: EditFormData = { remaining_sessions: "", remaining_weight: "", expiry_date: "", notes: "" }
+const emptyEditForm: EditFormData = { expiry_date: "", notes: "" }
 
 // ── Status badge colors ──
 
@@ -92,6 +93,14 @@ const SubscriptionsTable = ({
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
 
+  // Add-session-from-subscription dialog state
+  const [isSessionOpen, setIsSessionOpen] = useState(false)
+  const [sessionTarget, setSessionTarget] = useState<UserPackage | null>(null)
+  const [sessionWeight, setSessionWeight] = useState("")
+  const [sessionAttendance, setSessionAttendance] = useState<Attendance>("attended")
+  const [sessionNotes, setSessionNotes] = useState("")
+  const [savingSession, setSavingSession] = useState(false)
+
   // ── Filtering ──
 
   const filtered = subscriptions.filter(sub => {
@@ -110,12 +119,18 @@ const SubscriptionsTable = ({
   const openEdit = (sub: UserPackage) => {
     setEditingSubscription(sub)
     setEditForm({
-      remaining_sessions: String(sub.remaining_sessions),
-      remaining_weight: String(sub.remaining_weight),
       expiry_date: sub.expiry_date.split("T")[0], // ensure YYYY-MM-DD for date input
       notes: sub.notes ?? "",
     })
     setIsEditOpen(true)
+  }
+
+  const openSession = (sub: UserPackage) => {
+    setSessionTarget(sub)
+    setSessionWeight("")
+    setSessionAttendance("attended")
+    setSessionNotes("")
+    setIsSessionOpen(true)
   }
 
   const openDelete = (sub: UserPackage) => {
@@ -148,8 +163,6 @@ const SubscriptionsTable = ({
     setSaving(true)
     try {
       await onUpdateSubscription(editingSubscription.id, {
-        remaining_sessions: Number(editForm.remaining_sessions),
-        remaining_weight: Number(editForm.remaining_weight),
         expiry_date: editForm.expiry_date,
         notes: editForm.notes || null,
       })
@@ -176,6 +189,34 @@ const SubscriptionsTable = ({
       toast.error(err instanceof Error ? err.message : t("subscriptions.deleteFailed"))
     } finally {
       setDeleting(false)
+    }
+  }
+
+  const handleCreateSession = async () => {
+    if (!sessionTarget) return
+    setSavingSession(true)
+    try {
+      const res = await apiFetch("/sessions", {
+        method: "POST",
+        body: JSON.stringify({
+          user_id: sessionTarget.user_id,
+          package_id: sessionTarget.package_id,
+          session_weight: Number(sessionWeight),
+          attendance: sessionAttendance,
+          notes: sessionNotes || undefined,
+        }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => null)
+        throw new Error(err?.error || err?.message || `Failed: ${res.status}`)
+      }
+      toast.success(t("subscriptions.sessionCreateSuccess"))
+      setIsSessionOpen(false)
+      onRefetch() // refresh subscription data (remaining sessions/weight changes)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t("subscriptions.operationFailed"))
+    } finally {
+      setSavingSession(false)
     }
   }
 
@@ -319,6 +360,11 @@ const SubscriptionsTable = ({
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onClick={() => openSession(sub)} disabled={sub.status !== "active"}>
+                                    <CalendarPlus className="me-2 h-4 w-4" />
+                                    {t("subscriptions.addSession")}
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
                                   <DropdownMenuItem onClick={() => openEdit(sub)}>
                                     <Pencil className="me-2 h-4 w-4" />
                                     {t("common.edit")}
@@ -363,19 +409,12 @@ const SubscriptionsTable = ({
             {/* Client selector */}
             <div className="grid gap-2">
               <Label>{t("subscriptions.client")}</Label>
-              <Select
+              <UserCombobox
+                users={users}
                 value={createForm.user_id}
                 onValueChange={(v) => setCreateForm(prev => ({ ...prev, user_id: v }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={t("subscriptions.selectClient")} />
-                </SelectTrigger>
-                <SelectContent>
-                  {users.map(u => (
-                    <SelectItem key={u.id} value={u.id}>{u.full_name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                placeholder={t("subscriptions.selectClient")}
+              />
             </div>
 
             {/* Package selector */}
@@ -436,26 +475,6 @@ const SubscriptionsTable = ({
             </p>
           )}
           <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <Label>{t("subscriptions.remainingSessions")}</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  value={editForm.remaining_sessions}
-                  onChange={(e) => setEditForm(prev => ({ ...prev, remaining_sessions: e.target.value }))}
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label>{t("subscriptions.remainingWeight")}</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  value={editForm.remaining_weight}
-                  onChange={(e) => setEditForm(prev => ({ ...prev, remaining_weight: e.target.value }))}
-                />
-              </div>
-            </div>
             <div className="grid gap-2">
               <Label>{t("subscriptions.expiryDate")}</Label>
               <Input
@@ -517,6 +536,68 @@ const SubscriptionsTable = ({
             <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
               {deleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {t("common.delete")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Add Session Dialog ── */}
+      <Dialog open={isSessionOpen} onOpenChange={setIsSessionOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("subscriptions.addSession")}</DialogTitle>
+            <DialogDescription>{t("subscriptions.addSessionDescription")}</DialogDescription>
+          </DialogHeader>
+          {sessionTarget && (
+            <p className="text-sm text-muted-foreground">
+              {sessionTarget.user_name} — {sessionTarget.package_name}
+            </p>
+          )}
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label>{t("subscriptions.sessionWeight")}</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={sessionWeight}
+                  onChange={(e) => setSessionWeight(e.target.value)}
+                  placeholder="e.g. 2.5"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label>{t("subscriptions.sessionAttendance")}</Label>
+                <Select value={sessionAttendance} onValueChange={(v) => setSessionAttendance(v as Attendance)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="attended">{t("subscriptions.attended")}</SelectItem>
+                    <SelectItem value="booked">{t("subscriptions.booked")}</SelectItem>
+                    <SelectItem value="cancelled">{t("subscriptions.cancelled")}</SelectItem>
+                    <SelectItem value="cancelled - no charge">{t("subscriptions.cancelledNoCharge")}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid gap-2">
+              <Label>{t("subscriptions.sessionNotes")}</Label>
+              <Textarea
+                value={sessionNotes}
+                onChange={(e) => setSessionNotes(e.target.value)}
+                placeholder={t("subscriptions.sessionNotesPlaceholder")}
+                rows={2}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsSessionOpen(false)} disabled={savingSession}>
+              {t("common.cancel")}
+            </Button>
+            <Button onClick={handleCreateSession} disabled={!sessionWeight || savingSession}>
+              {savingSession && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {t("common.create")}
             </Button>
           </DialogFooter>
         </DialogContent>
