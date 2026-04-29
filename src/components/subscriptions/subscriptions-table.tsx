@@ -96,7 +96,6 @@ const SubscriptionsTable = ({
   // Add-session-from-subscription dialog state
   const [isSessionOpen, setIsSessionOpen] = useState(false)
   const [sessionTarget, setSessionTarget] = useState<UserPackage | null>(null)
-  const [sessionWeight, setSessionWeight] = useState("")
   const [sessionAttendance, setSessionAttendance] = useState<Attendance>("attended")
   const [sessionNotes, setSessionNotes] = useState("")
   const [savingSession, setSavingSession] = useState(false)
@@ -127,7 +126,6 @@ const SubscriptionsTable = ({
 
   const openSession = (sub: UserPackage) => {
     setSessionTarget(sub)
-    setSessionWeight("")
     setSessionAttendance("attended")
     setSessionNotes("")
     setIsSessionOpen(true)
@@ -201,7 +199,6 @@ const SubscriptionsTable = ({
         body: JSON.stringify({
           user_id: sessionTarget.user_id,
           package_id: sessionTarget.package_id,
-          session_weight: Number(sessionWeight),
           attendance: sessionAttendance,
           notes: sessionNotes || undefined,
         }),
@@ -554,32 +551,19 @@ const SubscriptionsTable = ({
             </p>
           )}
           <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <Label>{t("subscriptions.sessionWeight")}</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={sessionWeight}
-                  onChange={(e) => setSessionWeight(e.target.value)}
-                  placeholder="e.g. 2.5"
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label>{t("subscriptions.sessionAttendance")}</Label>
-                <Select value={sessionAttendance} onValueChange={(v) => setSessionAttendance(v as Attendance)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="attended">{t("subscriptions.attended")}</SelectItem>
-                    <SelectItem value="booked">{t("subscriptions.booked")}</SelectItem>
-                    <SelectItem value="cancelled">{t("subscriptions.cancelled")}</SelectItem>
-                    <SelectItem value="cancelled - no charge">{t("subscriptions.cancelledNoCharge")}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="grid gap-2">
+              <Label>{t("subscriptions.sessionAttendance")}</Label>
+              <Select value={sessionAttendance} onValueChange={(v) => setSessionAttendance(v as Attendance)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="attended">{t("subscriptions.attended")}</SelectItem>
+                  <SelectItem value="booked">{t("subscriptions.booked")}</SelectItem>
+                  <SelectItem value="cancelled">{t("subscriptions.cancelled")}</SelectItem>
+                  <SelectItem value="cancelled - no charge">{t("subscriptions.cancelledNoCharge")}</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="grid gap-2">
               <Label>{t("subscriptions.sessionNotes")}</Label>
@@ -595,7 +579,7 @@ const SubscriptionsTable = ({
             <Button variant="outline" onClick={() => setIsSessionOpen(false)} disabled={savingSession}>
               {t("common.cancel")}
             </Button>
-            <Button onClick={handleCreateSession} disabled={!sessionWeight || savingSession}>
+            <Button onClick={handleCreateSession} disabled={savingSession}>
               {savingSession && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {t("common.create")}
             </Button>

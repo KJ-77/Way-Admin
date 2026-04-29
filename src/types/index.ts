@@ -73,7 +73,6 @@ export interface Session {
   user_id: string
   package_id: number
   session_nb: number
-  session_weight: number // decimal(10,2)
   attendance: Attendance
   notes?: string
   created_at: string
@@ -121,10 +120,13 @@ export type ItemSection = "Studio" | "PC"
 export interface Item {
   id: number
   user_id: string
+  user_package_id: number | null
   stage: ItemStage
   section: ItemSection
   description?: string | null
   clay_type?: ClayType | null
+  mid_weight: number | null
+  final_weight: number | null
   created_at: string
   updated_at: string
   // Joined from users table

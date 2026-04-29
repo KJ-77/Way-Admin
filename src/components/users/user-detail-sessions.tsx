@@ -67,7 +67,6 @@ const UserDetailSessions = ({ sessions, loading }: UserDetailSessionsProps) => {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-sm font-medium">{session.package_name}</span>
-                      <span className="text-xs text-muted-foreground">{session.session_weight} kg</span>
                     </div>
                     <p className="text-xs text-muted-foreground mt-0.5">
                       {date} <span className="ms-1">{time}</span>

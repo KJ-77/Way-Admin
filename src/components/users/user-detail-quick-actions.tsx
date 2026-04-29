@@ -32,7 +32,7 @@ const UserDetailQuickActions = ({
 
   // ── Session dialog state ──
   const [sessionOpen, setSessionOpen] = useState(false)
-  const [sessionForm, setSessionForm] = useState({ package_id: "", session_weight: "", attendance: "attended", notes: "" })
+  const [sessionForm, setSessionForm] = useState({ package_id: "", attendance: "attended", notes: "" })
   const [sessionSaving, setSessionSaving] = useState(false)
 
   // Active subscriptions for the session dialog
@@ -95,7 +95,6 @@ const UserDetailQuickActions = ({
         body: JSON.stringify({
           user_id: user.id,
           package_id: Number(sessionForm.package_id),
-          session_weight: Number(sessionForm.session_weight),
           attendance: sessionForm.attendance,
           notes: sessionForm.notes || undefined,
         }),
@@ -139,7 +138,7 @@ const UserDetailQuickActions = ({
     }
   }
 
-  const sessionValid = sessionForm.package_id && sessionForm.session_weight && sessionForm.attendance
+  const sessionValid = sessionForm.package_id && sessionForm.attendance
 
   return (
     <>
@@ -159,7 +158,7 @@ const UserDetailQuickActions = ({
           size="sm"
           className="gap-1.5"
           onClick={() => {
-            setSessionForm({ package_id: "", session_weight: "", attendance: "attended", notes: "" })
+            setSessionForm({ package_id: "", attendance: "attended", notes: "" })
             setSessionOpen(true)
           }}
         >
@@ -214,18 +213,7 @@ const UserDetailQuickActions = ({
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <Label>{t("sessions.sessionWeight")}</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={sessionForm.session_weight}
-                  onChange={(e) => setSessionForm(prev => ({ ...prev, session_weight: e.target.value }))}
-                  placeholder="e.g. 2.5"
-                />
-              </div>
+            <div className="grid gap-4">
               <div className="grid gap-2">
                 <Label>{t("sessions.attendance")}</Label>
                 <Select

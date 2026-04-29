@@ -93,7 +93,6 @@
     "package": "الباقة",
     "subscription": "الاشتراك",
     "sessionNb": "رقم الجلسة",
-    "sessionWeight": "الوزن (كغ)",
     "attendance": "الحضور",
     "notes": "ملاحظات",
     "notesPlaceholder": "ملاحظات اختيارية حول هذه الجلسة...",
@@ -194,7 +193,6 @@
     "expiredSubscriptions": "منتهي",
     "addSession": "إضافة جلسة",
     "addSessionDescription": "إنشاء جلسة لهذا الاشتراك.",
-    "sessionWeight": "الوزن (كغ)",
     "sessionAttendance": "الحضور",
     "attended": "حضر",
     "booked": "محجوز",
@@ -327,7 +325,16 @@
     "sortOldest": "الأقدم أولاً",
     "totalItems": "إجمالي القطع",
     "inProgress": "قيد التنفيذ",
-    "readyForPickup": "جاهزة للاستلام"
+    "readyForPickup": "جاهزة للاستلام",
+    "subscription": "الاشتراك",
+    "selectSubscription": "اختر اشتراكاً",
+    "noActiveSubscriptions": "لا توجد اشتراكات نشطة لهذا العميل",
+    "loadingSubscriptions": "جاري تحميل الاشتراكات...",
+    "weight": "الوزن (كغ)",
+    "weightPlaceholder": "مثال: 1.5",
+    "advanceWeightPrompt": "أدخل الوزن الحالي لهذه القطعة لخصمه من الاشتراك.",
+    "midWeight": "الوزن المتوسط",
+    "finalWeight": "الوزن النهائي"
   },
   "auth": {
     "loginTitle": "مرحباً بعودتك",

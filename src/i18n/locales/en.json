@@ -93,7 +93,6 @@
     "package": "Package",
     "subscription": "Subscription",
     "sessionNb": "Session #",
-    "sessionWeight": "Weight (kg)",
     "attendance": "Attendance",
     "notes": "Notes",
     "notesPlaceholder": "Optional notes about this session...",
@@ -194,7 +193,6 @@
     "expiredSubscriptions": "Expired",
     "addSession": "Add Session",
     "addSessionDescription": "Create a session for this subscription.",
-    "sessionWeight": "Weight (kg)",
     "sessionAttendance": "Attendance",
     "attended": "Attended",
     "booked": "Booked",
@@ -327,7 +325,16 @@
     "sortOldest": "Oldest First",
     "totalItems": "Total Items",
     "inProgress": "In Progress",
-    "readyForPickup": "Ready for Pickup"
+    "readyForPickup": "Ready for Pickup",
+    "subscription": "Subscription",
+    "selectSubscription": "Select a subscription",
+    "noActiveSubscriptions": "No active subscriptions for this client",
+    "loadingSubscriptions": "Loading subscriptions...",
+    "weight": "Weight (kg)",
+    "weightPlaceholder": "e.g. 1.5",
+    "advanceWeightPrompt": "Enter the current weight of this item to deduct from the subscription.",
+    "midWeight": "Mid Weight",
+    "finalWeight": "Final Weight"
   },
   "auth": {
     "loginTitle": "Welcome Back",

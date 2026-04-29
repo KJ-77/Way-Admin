@@ -4,7 +4,6 @@ import { SidebarTrigger } from "@/components/ui/sidebar"
 import { Separator } from "@/components/ui/separator"
 import { Input } from "@/components/ui/input"
 import { ModeToggle } from "@/components/mode-toggle"
-import { LanguageToggle } from "@/components/language-toggle"
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -79,7 +78,6 @@ const AppHeader = () => {
           />
         </div>
 
-        <LanguageToggle />
         <ModeToggle />
       </div>
     </header>

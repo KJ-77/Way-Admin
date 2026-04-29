@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
 import { toast } from "sonner"
@@ -25,7 +25,8 @@ import {
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import UserCombobox from "@/components/ui/user-combobox"
-import type { Item, ItemStage, ItemSection, ClayType, User } from "@/types"
+import { apiFetch } from "@/lib/api"
+import type { Item, ItemStage, ItemSection, ClayType, User, UserPackage } from "@/types"
 
 const CLAY_TYPES: ClayType[] = ["lf-clb-white", "lf-sio-brown", "hf-prai-white", "lf-pa-white"]
 
@@ -37,6 +38,9 @@ const PROGRESSION_STAGES: ItemStage[] = ["drying", "bisque fired", "waiting glaz
 // All stages including terminal "discarded" (used in filters + edit dropdown)
 const ALL_STAGES: ItemStage[] = [...PROGRESSION_STAGES, "discarded"]
 const SECTIONS: ItemSection[] = ["Studio", "PC"]
+
+// Stages that require a weight input when advancing to them
+const WEIGHT_STAGES = new Set<ItemStage>(["waiting glaze", "ready"])
 
 // Returns the next stage in the normal progression, or null if terminal/discarded
 function getNextStage(current: ItemStage): ItemStage | null {
@@ -94,10 +98,16 @@ const ItemsTable = ({
   const [createSection, setCreateSection] = useState<ItemSection | "">("")
   const [createDescription, setCreateDescription] = useState("")
   const [createClay, setCreateClay] = useState("")
+  const [createPackageId, setCreatePackageId] = useState("")
   const [saving, setSaving] = useState(false)
+
+  // Per-user active subscriptions for the create dialog
+  const [userSubscriptions, setUserSubscriptions] = useState<UserPackage[]>([])
+  const [loadingSubs, setLoadingSubs] = useState(false)
 
   // Advance stage dialog
   const [advanceTarget, setAdvanceTarget] = useState<Item | null>(null)
+  const [advanceWeight, setAdvanceWeight] = useState("")
   const [advancing, setAdvancing] = useState(false)
 
   // Edit dialog
@@ -110,6 +120,32 @@ const ItemsTable = ({
   // Delete dialog
   const [deleteTarget, setDeleteTarget] = useState<Item | null>(null)
   const [deleting, setDeleting] = useState(false)
+
+  // Fetch active subscriptions when user changes in create form
+  useEffect(() => {
+    if (!createUserId) {
+      setUserSubscriptions([])
+      return
+    }
+    let cancelled = false
+    const fetchSubs = async () => {
+      setLoadingSubs(true)
+      try {
+        const res = await apiFetch(`/user-packages?user_id=${createUserId}`)
+        if (!res.ok) throw new Error()
+        const data: UserPackage[] = await res.json()
+        if (!cancelled) {
+          setUserSubscriptions(data.filter(s => s.status === "active"))
+        }
+      } catch {
+        if (!cancelled) setUserSubscriptions([])
+      } finally {
+        if (!cancelled) setLoadingSubs(false)
+      }
+    }
+    fetchSubs()
+    return () => { cancelled = true }
+  }, [createUserId])
 
   // ── Filtering + sorting ──
   const filtered = useMemo(() => {
@@ -135,6 +171,8 @@ const ItemsTable = ({
     setCreateSection("")
     setCreateDescription("")
     setCreateClay("")
+    setCreatePackageId("")
+    setUserSubscriptions([])
     setIsCreateOpen(true)
   }
 
@@ -143,6 +181,7 @@ const ItemsTable = ({
     try {
       await onCreateItem({
         user_id: createUserId,
+        user_package_id: Number(createPackageId),
         section: createSection,
         description: createDescription || null,
         clay_type: createClay || null,
@@ -159,6 +198,7 @@ const ItemsTable = ({
 
   const openAdvance = (item: Item) => {
     setAdvanceTarget(item)
+    setAdvanceWeight("")
   }
 
   const handleAdvance = async () => {
@@ -166,9 +206,17 @@ const ItemsTable = ({
     const nextStage = getNextStage(advanceTarget.stage)
     if (!nextStage) return
 
+    // Build the update payload — include weight when required
+    const body: Record<string, unknown> = { stage: nextStage }
+    if (nextStage === "waiting glaze") {
+      body.mid_weight = Number(advanceWeight)
+    } else if (nextStage === "ready") {
+      body.final_weight = Number(advanceWeight)
+    }
+
     setAdvancing(true)
     try {
-      await onUpdateItem(advanceTarget.id, { stage: nextStage })
+      await onUpdateItem(advanceTarget.id, body)
       toast.success(t("items.advanceSuccess"))
       setAdvanceTarget(null)
       onRefetch()
@@ -223,6 +271,14 @@ const ItemsTable = ({
       setDeleting(false)
     }
   }
+
+  // Whether the advance dialog needs a weight input
+  const advanceNeedsWeight = advanceTarget
+    ? WEIGHT_STAGES.has(getNextStage(advanceTarget.stage)!)
+    : false
+
+  // Advance button is disabled if weight is required but not entered
+  const advanceValid = !advanceNeedsWeight || (advanceWeight && Number(advanceWeight) > 0)
 
   // ── Render ──
 
@@ -413,10 +469,42 @@ const ItemsTable = ({
               <UserCombobox
                 users={users}
                 value={createUserId}
-                onValueChange={setCreateUserId}
+                onValueChange={(v) => { setCreateUserId(v); setCreatePackageId("") }}
                 placeholder={t("items.selectClient")}
               />
             </div>
+
+            {/* Subscription selector — shows after client is picked */}
+            <div className="grid gap-2">
+              <Label>{t("items.subscription")}</Label>
+              {loadingSubs ? (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  {t("items.loadingSubscriptions")}
+                </div>
+              ) : !createUserId ? (
+                <p className="text-sm text-muted-foreground py-1">{t("items.selectClient")}</p>
+              ) : userSubscriptions.length === 0 ? (
+                <p className="text-sm text-destructive py-1">{t("items.noActiveSubscriptions")}</p>
+              ) : (
+                <Select
+                  value={createPackageId}
+                  onValueChange={setCreatePackageId}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={t("items.selectSubscription")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {userSubscriptions.map(sub => (
+                      <SelectItem key={sub.id} value={String(sub.id)}>
+                        {sub.package_name} — {sub.remaining_sessions} sessions, {sub.remaining_weight} kg left
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+
             <div className="grid gap-2">
               <Label>{t("items.section")}</Label>
               <Select value={createSection} onValueChange={(v) => setCreateSection(v as ItemSection)}>
@@ -460,7 +548,7 @@ const ItemsTable = ({
             <Button variant="outline" onClick={() => setIsCreateOpen(false)} disabled={saving}>
               {t("common.cancel")}
             </Button>
-            <Button onClick={handleCreate} disabled={!createUserId || !createSection || saving}>
+            <Button onClick={handleCreate} disabled={!createUserId || !createSection || !createPackageId || saving}>
               {saving && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
               {t("common.create")}
             </Button>
@@ -476,26 +564,44 @@ const ItemsTable = ({
             <DialogDescription>{t("items.advanceWarning")}</DialogDescription>
           </DialogHeader>
           {advanceTarget && (
-            <div className="flex items-center gap-3 py-2">
-              <Badge variant="outline" className={stageBadgeVariant[advanceTarget.stage]}>
-                {t(`items.stage_${advanceTarget.stage.replace(" ", "_")}`)}
-              </Badge>
-              <ChevronRight className="h-4 w-4 text-muted-foreground" />
-              <Badge variant="outline" className={stageBadgeVariant[getNextStage(advanceTarget.stage)!]}>
-                {t(`items.stage_${getNextStage(advanceTarget.stage)!.replace(" ", "_")}`)}
-              </Badge>
-            </div>
-          )}
-          {advanceTarget && (
-            <p className="text-sm text-muted-foreground">
-              {advanceTarget.user_name} — #{advanceTarget.id.toString(16).toUpperCase()}
-            </p>
+            <>
+              <div className="flex items-center gap-3 py-2">
+                <Badge variant="outline" className={stageBadgeVariant[advanceTarget.stage]}>
+                  {t(`items.stage_${advanceTarget.stage.replace(" ", "_")}`)}
+                </Badge>
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                <Badge variant="outline" className={stageBadgeVariant[getNextStage(advanceTarget.stage)!]}>
+                  {t(`items.stage_${getNextStage(advanceTarget.stage)!.replace(" ", "_")}`)}
+                </Badge>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {advanceTarget.user_name} — #{advanceTarget.id.toString(16).toUpperCase()}
+              </p>
+
+              {/* Weight input — only shown when advancing to "waiting glaze" or "ready" */}
+              {advanceNeedsWeight && (
+                <div className="grid gap-2 pt-2">
+                  <Label>{t("items.weight")}</Label>
+                  <Input
+                    type="number"
+                    min="0.01"
+                    step="0.01"
+                    value={advanceWeight}
+                    onChange={(e) => setAdvanceWeight(e.target.value)}
+                    placeholder={t("items.weightPlaceholder")}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {t("items.advanceWeightPrompt")}
+                  </p>
+                </div>
+              )}
+            </>
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setAdvanceTarget(null)} disabled={advancing}>
               {t("common.cancel")}
             </Button>
-            <Button onClick={handleAdvance} disabled={advancing}>
+            <Button onClick={handleAdvance} disabled={advancing || !advanceValid}>
               {advancing && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
               {t("common.confirm")}
             </Button>
@@ -549,6 +655,17 @@ const ItemsTable = ({
                   </SelectContent>
                 </Select>
               </div>
+              {/* Display recorded weights if they exist */}
+              {(editTarget.mid_weight != null || editTarget.final_weight != null) && (
+                <div className="flex gap-4 text-sm text-muted-foreground border rounded-md p-3">
+                  {editTarget.mid_weight != null && (
+                    <span>{t("items.midWeight")}: {editTarget.mid_weight} kg</span>
+                  )}
+                  {editTarget.final_weight != null && (
+                    <span>{t("items.finalWeight")}: {editTarget.final_weight} kg</span>
+                  )}
+                </div>
+              )}
             </div>
           )}
           <DialogFooter>

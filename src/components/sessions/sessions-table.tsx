@@ -54,25 +54,23 @@ interface SessionsTableProps {
 interface CreateFormData {
   user_id: string
   package_id: string
-  session_weight: string
   attendance: string
   notes: string
 }
 
 interface EditFormData {
   session_nb: string
-  session_weight: string
   attendance: string
   notes: string
 }
 
 const emptyCreateForm: CreateFormData = {
   user_id: "", package_id: "",
-  session_weight: "", attendance: "attended", notes: "",
+  attendance: "attended", notes: "",
 }
 
 const emptyEditForm: EditFormData = {
-  session_nb: "", session_weight: "", attendance: "", notes: "",
+  session_nb: "", attendance: "", notes: "",
 }
 
 // ── Badge colors ──
@@ -172,7 +170,6 @@ const SessionsTable = ({
     setEditingSession(session)
     setEditForm({
       session_nb: String(session.session_nb),
-      session_weight: String(session.session_weight),
       attendance: session.attendance,
       notes: session.notes ?? "",
     })
@@ -193,7 +190,6 @@ const SessionsTable = ({
       await onCreateSession({
         user_id: createForm.user_id,
         package_id: Number(createForm.package_id),
-        session_weight: Number(createForm.session_weight),
         attendance: createForm.attendance,
         notes: createForm.notes || undefined,
       })
@@ -213,7 +209,6 @@ const SessionsTable = ({
     try {
       await onUpdateSession(editingSession.id, {
         session_nb: Number(editForm.session_nb),
-        session_weight: Number(editForm.session_weight),
         attendance: editForm.attendance,
         notes: editForm.notes || null,
       })
@@ -245,8 +240,7 @@ const SessionsTable = ({
 
   // Check if create form is valid
   const isCreateValid =
-    createForm.user_id && createForm.package_id &&
-    createForm.session_weight && createForm.attendance
+    createForm.user_id && createForm.package_id && createForm.attendance
 
   // ── Render ──
 
@@ -312,7 +306,6 @@ const SessionsTable = ({
                       <TableHead>{t("sessions.date")}</TableHead>
                       <TableHead className="hidden md:table-cell">{t("sessions.package")}</TableHead>
                       <TableHead className="hidden md:table-cell">{t("sessions.sessionNb")}</TableHead>
-                      <TableHead className="hidden lg:table-cell">{t("sessions.sessionWeight")}</TableHead>
                       <TableHead>{t("sessions.attendance")}</TableHead>
                       <TableHead className="hidden lg:table-cell">{t("sessions.notes")}</TableHead>
                       <TableHead className="w-[50px]">{t("sessions.actions")}</TableHead>
@@ -344,9 +337,6 @@ const SessionsTable = ({
                             </TableCell>
                             <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
                               #{session.session_nb}
-                            </TableCell>
-                            <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
-                              {session.session_weight} kg
                             </TableCell>
                             <TableCell>
                               <Badge variant="outline" className={attendanceColors[session.attendance]}>
@@ -448,20 +438,7 @@ const SessionsTable = ({
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              {/* Session weight */}
-              <div className="grid gap-2">
-                <Label>{t("sessions.sessionWeight")}</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={createForm.session_weight}
-                  onChange={(e) => setCreateForm(prev => ({ ...prev, session_weight: e.target.value }))}
-                  placeholder="e.g. 2.5"
-                />
-              </div>
-
+            <div className="grid gap-4">
               {/* Attendance */}
               <div className="grid gap-2">
                 <Label>{t("sessions.attendance")}</Label>
@@ -545,16 +522,6 @@ const SessionsTable = ({
                   onChange={(e) => setEditForm(prev => ({ ...prev, session_nb: e.target.value }))}
                 />
               </div>
-            </div>
-            <div className="grid gap-2">
-              <Label>{t("sessions.sessionWeight")}</Label>
-              <Input
-                type="number"
-                min="0"
-                step="0.01"
-                value={editForm.session_weight}
-                onChange={(e) => setEditForm(prev => ({ ...prev, session_weight: e.target.value }))}
-              />
             </div>
             <div className="grid gap-2">
               <Label>{t("sessions.notes")}</Label>
