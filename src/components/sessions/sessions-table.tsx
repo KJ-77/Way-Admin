@@ -52,8 +52,8 @@ interface SessionsTableProps {
 // ── Form data shapes ──
 
 interface CreateFormData {
-  user_id: string
-  package_id: string
+  user_id: string          // drives the subscription picker; not sent to the API
+  user_package_id: string  // the actual session anchor — what gets sent
   attendance: string
   notes: string
 }
@@ -65,7 +65,7 @@ interface EditFormData {
 }
 
 const emptyCreateForm: CreateFormData = {
-  user_id: "", package_id: "",
+  user_id: "", user_package_id: "",
   attendance: "attended", notes: "",
 }
 
@@ -188,8 +188,7 @@ const SessionsTable = ({
     try {
       // session_nb is auto-calculated by the backend
       await onCreateSession({
-        user_id: createForm.user_id,
-        package_id: Number(createForm.package_id),
+        user_package_id: Number(createForm.user_package_id),
         attendance: createForm.attendance,
         notes: createForm.notes || undefined,
       })
@@ -240,7 +239,7 @@ const SessionsTable = ({
 
   // Check if create form is valid
   const isCreateValid =
-    createForm.user_id && createForm.package_id && createForm.attendance
+    createForm.user_id && createForm.user_package_id && createForm.attendance
 
   // ── Render ──
 
@@ -402,7 +401,7 @@ const SessionsTable = ({
               <UserCombobox
                 users={users}
                 value={createForm.user_id}
-                onValueChange={(v) => setCreateForm(prev => ({ ...prev, user_id: v, package_id: "" }))}
+                onValueChange={(v) => setCreateForm(prev => ({ ...prev, user_id: v, user_package_id: "" }))}
                 placeholder={t("sessions.selectClient")}
               />
             </div>
@@ -421,15 +420,15 @@ const SessionsTable = ({
                 <p className="text-sm text-destructive py-1">{t("sessions.noActiveSubscriptions")}</p>
               ) : (
                 <Select
-                  value={createForm.package_id}
-                  onValueChange={(v) => setCreateForm(prev => ({ ...prev, package_id: v }))}
+                  value={createForm.user_package_id}
+                  onValueChange={(v) => setCreateForm(prev => ({ ...prev, user_package_id: v }))}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder={t("sessions.selectSubscription")} />
                   </SelectTrigger>
                   <SelectContent>
                     {userSubscriptions.map(sub => (
-                      <SelectItem key={sub.id} value={String(sub.package_id)}>
+                      <SelectItem key={sub.id} value={String(sub.id)}>
                         {sub.package_name}
                       </SelectItem>
                     ))}

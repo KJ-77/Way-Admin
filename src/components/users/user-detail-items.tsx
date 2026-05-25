@@ -10,6 +10,7 @@ const stageBadgeClass: Record<ItemStage, string> = {
   "waiting glaze": "bg-blue-500/15 text-blue-500 border-blue-500/30",
   "glaze fired": "bg-purple-500/15 text-purple-500 border-purple-500/30",
   "ready": "bg-green-500/15 text-green-500 border-green-500/30",
+  "picked up": "bg-emerald-500/15 text-emerald-500 border-emerald-500/30",
   "discarded": "bg-red-500/15 text-red-400 border-red-500/30",
 }
 

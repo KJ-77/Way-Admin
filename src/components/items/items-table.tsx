@@ -26,27 +26,75 @@ import {
 } from "@/components/ui/dropdown-menu"
 import UserCombobox from "@/components/ui/user-combobox"
 import { apiFetch } from "@/lib/api"
-import type { Item, ItemStage, ItemSection, ClayType, User, UserPackage } from "@/types"
-
-const CLAY_TYPES: ClayType[] = ["lf-clb-white", "lf-sio-brown", "hf-prai-white", "lf-pa-white"]
+import { useClayTypes } from "@/hooks/use-clay-types"
+import { useAuth } from "@/contexts/auth-context"
+import type { Item, ItemStage, ItemSection, User, UserPackage } from "@/types"
 
 type SortOption = "id" | "created_desc" | "created_asc"
 
 // ── Stage definitions ──
-// Normal progression (advance button follows this order)
-const PROGRESSION_STAGES: ItemStage[] = ["drying", "bisque fired", "waiting glaze", "glaze fired", "ready"]
-// All stages including terminal "discarded" (used in filters + edit dropdown)
-const ALL_STAGES: ItemStage[] = [...PROGRESSION_STAGES, "discarded"]
+// Studio flow: full 6-stage progression with 2 firings (advance button follows this order)
+const STUDIO_PROGRESSION: ItemStage[] = ["drying", "bisque fired", "waiting glaze", "glaze fired", "ready", "picked up"]
+// PC flow: walk-in painting — starts at "glaze fired", hops through "ready" → "picked up"
+const PC_PROGRESSION: ItemStage[] = ["glaze fired", "ready", "picked up"]
+// PC items only ever live in these stages — used to constrain the edit dialog
+const PC_ALLOWED_STAGES: ItemStage[] = ["glaze fired", "ready", "picked up", "discarded"]
+// All stages including terminal "discarded" (used in Studio filters + edit dropdown)
+const ALL_STAGES: ItemStage[] = [...STUDIO_PROGRESSION, "discarded"]
 const SECTIONS: ItemSection[] = ["Studio", "PC"]
 
-// Stages that require a weight input when advancing to them
-const WEIGHT_STAGES = new Set<ItemStage>(["waiting glaze", "ready"])
+// Stages that require a weight input when advancing to them — Studio only
+const STUDIO_WEIGHT_STAGES = new Set<ItemStage>(["waiting glaze", "ready"])
 
-// Returns the next stage in the normal progression, or null if terminal/discarded
-function getNextStage(current: ItemStage): ItemStage | null {
-  const idx = PROGRESSION_STAGES.indexOf(current)
-  if (idx === -1) return null // discarded or unknown → no next step
-  return idx < PROGRESSION_STAGES.length - 1 ? PROGRESSION_STAGES[idx + 1] : null
+// Ranking used to detect backward stage transitions (mirror of backend logic)
+const STAGE_ORDER: Record<Exclude<ItemStage, "discarded">, number> = {
+  "drying": 0,
+  "bisque fired": 1,
+  "waiting glaze": 2,
+  "glaze fired": 3,
+  "ready": 4,
+  "picked up": 5,
+}
+
+// Mirror of backend `isStageBackward` — discarded is treated as a terminal sink,
+// so any transition OUT of it counts as a rewind (admin-gated).
+function isStageBackward(from: ItemStage, to: ItemStage): boolean {
+  if (from === to) return false
+  if (from === "discarded") return true
+  if (to === "discarded") return false
+  return STAGE_ORDER[to] < STAGE_ORDER[from]
+}
+
+// Returns true if a forward stage change from `from` to `to` crosses past `threshold`.
+// Used to detect when an edit-dialog stage jump skips one or more weigh-in stages
+// (e.g. drying → ready crosses both "waiting glaze" and "ready"), so the UI can
+// prompt for every weight the new stage implies — not just the target's weight.
+function crossesStageForward(from: ItemStage, to: ItemStage, threshold: ItemStage): boolean {
+  if (from === "discarded" || to === "discarded" || threshold === "discarded") return false
+  const fromRank = STAGE_ORDER[from]
+  const toRank = STAGE_ORDER[to]
+  const thresholdRank = STAGE_ORDER[threshold]
+  return fromRank < thresholdRank && toRank >= thresholdRank
+}
+
+// Returns the next stage in the progression for this section, or null if terminal/discarded
+function getNextStage(current: ItemStage, section: ItemSection): ItemStage | null {
+  const progression = section === "PC" ? PC_PROGRESSION : STUDIO_PROGRESSION
+  const idx = progression.indexOf(current)
+  if (idx === -1) return null // discarded, or stage doesn't apply to this section
+  return idx < progression.length - 1 ? progression[idx + 1] : null
+}
+
+// Whether the upcoming stage transition needs a weight input (PC items skip weight entirely)
+function stageNeedsWeight(nextStage: ItemStage, section: ItemSection): boolean {
+  if (section === "PC") return false
+  return STUDIO_WEIGHT_STAGES.has(nextStage)
+}
+
+// Whether the upcoming stage transition needs a glaze type input (Studio only, into "glaze fired")
+function stageNeedsGlazeType(nextStage: ItemStage, section: ItemSection): boolean {
+  if (section === "PC") return false
+  return nextStage === "glaze fired"
 }
 
 // Badge color per stage
@@ -56,6 +104,7 @@ const stageBadgeVariant: Record<ItemStage, string> = {
   "waiting glaze": "bg-blue-500/15 text-blue-500 border-blue-500/30",
   "glaze fired": "bg-purple-500/15 text-purple-500 border-purple-500/30",
   "ready": "bg-green-500/15 text-green-500 border-green-500/30",
+  "picked up": "bg-emerald-500/15 text-emerald-500 border-emerald-500/30",
   "discarded": "bg-red-500/15 text-red-400 border-red-500/30",
 }
 
@@ -85,6 +134,11 @@ const ItemsTable = ({
 }: ItemsTableProps) => {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const { user } = useAuth()
+  const isAdmin = user?.groups.includes("admin") ?? false
+
+  // Dynamic clay-type catalog (admin-managed list — see /clay-types)
+  const { clayTypes } = useClayTypes()
 
   // ── State ──
   const [search, setSearch] = useState("")
@@ -108,6 +162,7 @@ const ItemsTable = ({
   // Advance stage dialog
   const [advanceTarget, setAdvanceTarget] = useState<Item | null>(null)
   const [advanceWeight, setAdvanceWeight] = useState("")
+  const [advanceGlaze, setAdvanceGlaze] = useState("")
   const [advancing, setAdvancing] = useState(false)
 
   // Edit dialog
@@ -115,15 +170,20 @@ const ItemsTable = ({
   const [editStage, setEditStage] = useState<ItemStage>("drying")
   const [editDescription, setEditDescription] = useState("")
   const [editClay, setEditClay] = useState("")
+  const [editGlaze, setEditGlaze] = useState("")
+  // Weight inputs for forward stage jumps that skip past "waiting glaze" / "ready"
+  // (the Advance dialog only handles one stage at a time, so we collect them here too)
+  const [editMidWeight, setEditMidWeight] = useState("")
+  const [editFinalWeight, setEditFinalWeight] = useState("")
   const [editSaving, setEditSaving] = useState(false)
 
   // Delete dialog
   const [deleteTarget, setDeleteTarget] = useState<Item | null>(null)
   const [deleting, setDeleting] = useState(false)
 
-  // Fetch active subscriptions when user changes in create form
+  // Fetch active subscriptions when user changes in create form — only matters for Studio items
   useEffect(() => {
-    if (!createUserId) {
+    if (!createUserId || createSection === "PC") {
       setUserSubscriptions([])
       return
     }
@@ -145,7 +205,7 @@ const ItemsTable = ({
     }
     fetchSubs()
     return () => { cancelled = true }
-  }, [createUserId])
+  }, [createUserId, createSection])
 
   // ── Filtering + sorting ──
   const filtered = useMemo(() => {
@@ -179,12 +239,17 @@ const ItemsTable = ({
   const handleCreate = async () => {
     setSaving(true)
     try {
+      // PC items: no subscription, start at "glaze fired", no clay (pre-made ceramics)
+      // Studio items: linked subscription, default stage ("drying"), optional clay type
+      // glaze_type is NOT prompted at creation — it's captured when the item advances to "glaze fired"
+      const isPC = createSection === "PC"
       await onCreateItem({
         user_id: createUserId,
-        user_package_id: Number(createPackageId),
+        user_package_id: isPC ? null : Number(createPackageId),
         section: createSection,
+        stage: isPC ? "glaze fired" : undefined,
         description: createDescription || null,
-        clay_type: createClay || null,
+        clay_type: isPC ? null : (createClay || null),
       })
       toast.success(t("items.createSuccess"))
       setIsCreateOpen(false)
@@ -199,19 +264,25 @@ const ItemsTable = ({
   const openAdvance = (item: Item) => {
     setAdvanceTarget(item)
     setAdvanceWeight("")
+    setAdvanceGlaze("")
   }
 
   const handleAdvance = async () => {
     if (!advanceTarget) return
-    const nextStage = getNextStage(advanceTarget.stage)
+    const nextStage = getNextStage(advanceTarget.stage, advanceTarget.section)
     if (!nextStage) return
 
-    // Build the update payload — include weight when required
+    // Build the update payload — include weight only for Studio items advancing to weigh-in stages,
+    // and glaze_type when advancing into "glaze fired" (Studio only)
     const body: Record<string, unknown> = { stage: nextStage }
-    if (nextStage === "waiting glaze") {
-      body.mid_weight = Number(advanceWeight)
-    } else if (nextStage === "ready") {
-      body.final_weight = Number(advanceWeight)
+    if (advanceTarget.section === "Studio") {
+      if (nextStage === "waiting glaze") {
+        body.mid_weight = Number(advanceWeight)
+      } else if (nextStage === "ready") {
+        body.final_weight = Number(advanceWeight)
+      } else if (nextStage === "glaze fired" && advanceGlaze) {
+        body.glaze_type = advanceGlaze
+      }
     }
 
     setAdvancing(true)
@@ -232,17 +303,33 @@ const ItemsTable = ({
     setEditStage(item.stage)
     setEditDescription(item.description ?? "")
     setEditClay(item.clay_type ?? "")
+    setEditGlaze(item.glaze_type ?? "")
+    setEditMidWeight("")
+    setEditFinalWeight("")
   }
 
   const handleEdit = async () => {
     if (!editTarget) return
     setEditSaving(true)
     try {
-      await onUpdateItem(editTarget.id, {
+      // Rewinds are gated server-side, but we also block in the UI so non-admins
+      // get an immediate, friendly error rather than a 403 from the API.
+      if (isStageBackward(editTarget.stage, editStage) && !isAdmin) {
+        toast.error(t("items.rewindAdminOnly"))
+        setEditSaving(false)
+        return
+      }
+      const body: Record<string, unknown> = {
         stage: editStage,
         description: editDescription || null,
         clay_type: editClay || null,
-      })
+        glaze_type: editGlaze || null,
+      }
+      // Include any weight that this forward stage jump crosses — the backend
+      // will deduct each one from the subscription in a single transaction.
+      if (editCrossesWaitingGlaze) body.mid_weight = Number(editMidWeight)
+      if (editCrossesReady) body.final_weight = Number(editFinalWeight)
+      await onUpdateItem(editTarget.id, body)
       toast.success(t("items.updateSuccess"))
       setEditTarget(null)
       onRefetch()
@@ -272,13 +359,58 @@ const ItemsTable = ({
     }
   }
 
-  // Whether the advance dialog needs a weight input
-  const advanceNeedsWeight = advanceTarget
-    ? WEIGHT_STAGES.has(getNextStage(advanceTarget.stage)!)
+  // Whether the advance dialog needs a weight or glaze-type input (Studio-only; PC skips both)
+  const advanceNextStage = advanceTarget ? getNextStage(advanceTarget.stage, advanceTarget.section) : null
+  const advanceNeedsWeight = advanceTarget && advanceNextStage
+    ? stageNeedsWeight(advanceNextStage, advanceTarget.section)
+    : false
+  const advanceNeedsGlazeType = advanceTarget && advanceNextStage
+    ? stageNeedsGlazeType(advanceNextStage, advanceTarget.section)
     : false
 
-  // Advance button is disabled if weight is required but not entered
-  const advanceValid = !advanceNeedsWeight || (advanceWeight && Number(advanceWeight) > 0)
+  // Advance button validation
+  const advanceValid =
+    (!advanceNeedsWeight || (advanceWeight && Number(advanceWeight) > 0)) &&
+    (!advanceNeedsGlazeType || !!advanceGlaze)
+
+  // Edit-dialog rewind warning + refund preview (Studio only)
+  const editIsRewind = editTarget ? isStageBackward(editTarget.stage, editStage) : false
+  const editRefundPreview = useMemo(() => {
+    if (!editTarget || !editIsRewind || editTarget.section !== "Studio") return 0
+    const currentRank = STAGE_ORDER[editTarget.stage as Exclude<ItemStage, "discarded">] ?? -1
+    const newRank = editStage === "discarded" ? -1 : STAGE_ORDER[editStage]
+    let total = 0
+    if (editTarget.mid_weight != null && currentRank >= STAGE_ORDER["waiting glaze"] && newRank < STAGE_ORDER["waiting glaze"]) {
+      total += Number(editTarget.mid_weight)
+    }
+    if (editTarget.final_weight != null && currentRank >= STAGE_ORDER["ready"] && newRank < STAGE_ORDER["ready"]) {
+      total += Number(editTarget.final_weight)
+    }
+    return total
+  }, [editTarget, editIsRewind, editStage])
+
+  // Forward stage jumps in the edit dialog may skip past one or more weigh-in stages.
+  // We need to prompt for every weight (and glaze type) the new stage implies, not
+  // just the target's weight — mirrors the backend's threshold-crossing check.
+  // Each flag is suppressed when the value is already recorded on the item (e.g. an
+  // admin who rewound and re-advanced — the existing weight is still on the row).
+  const editIsForwardJump = !!editTarget && !editIsRewind && editStage !== editTarget.stage
+  const editIsStudio = editTarget?.section === "Studio"
+  const editCrossesWaitingGlaze = !!editTarget && editIsForwardJump && editIsStudio
+    && crossesStageForward(editTarget.stage, editStage, "waiting glaze")
+    && editTarget.mid_weight == null
+  const editCrossesGlazeFired = !!editTarget && editIsForwardJump && editIsStudio
+    && crossesStageForward(editTarget.stage, editStage, "glaze fired")
+    && !editTarget.glaze_type
+  const editCrossesReady = !!editTarget && editIsForwardJump && editIsStudio
+    && crossesStageForward(editTarget.stage, editStage, "ready")
+    && editTarget.final_weight == null
+
+  // All required-by-crossing inputs must be filled before save is allowed.
+  const editValid =
+    (!editCrossesWaitingGlaze || (!!editMidWeight && Number(editMidWeight) > 0)) &&
+    (!editCrossesReady || (!!editFinalWeight && Number(editFinalWeight) > 0)) &&
+    (!editCrossesGlazeFired || !!editGlaze)
 
   // ── Render ──
 
@@ -375,7 +507,7 @@ const ItemsTable = ({
                     </TableRow>
                   ) : (
                     filtered.map((item) => {
-                      const nextStage = getNextStage(item.stage)
+                      const nextStage = getNextStage(item.stage, item.section)
                       return (
                         <TableRow
                           key={item.id}
@@ -414,7 +546,7 @@ const ItemsTable = ({
                                 {t("items.stage_discarded")}
                               </Badge>
                             ) : (
-                              <Badge variant="outline" className={stageBadgeVariant["ready"]}>
+                              <Badge variant="outline" className={stageBadgeVariant[item.stage]}>
                                 {t("items.complete")}
                               </Badge>
                             )}
@@ -474,37 +606,6 @@ const ItemsTable = ({
               />
             </div>
 
-            {/* Subscription selector — shows after client is picked */}
-            <div className="grid gap-2">
-              <Label>{t("items.subscription")}</Label>
-              {loadingSubs ? (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  {t("items.loadingSubscriptions")}
-                </div>
-              ) : !createUserId ? (
-                <p className="text-sm text-muted-foreground py-1">{t("items.selectClient")}</p>
-              ) : userSubscriptions.length === 0 ? (
-                <p className="text-sm text-destructive py-1">{t("items.noActiveSubscriptions")}</p>
-              ) : (
-                <Select
-                  value={createPackageId}
-                  onValueChange={setCreatePackageId}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={t("items.selectSubscription")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {userSubscriptions.map(sub => (
-                      <SelectItem key={sub.id} value={String(sub.id)}>
-                        {sub.package_name} — {sub.remaining_sessions} sessions, {sub.remaining_weight} kg left
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            </div>
-
             <div className="grid gap-2">
               <Label>{t("items.section")}</Label>
               <Select value={createSection} onValueChange={(v) => setCreateSection(v as ItemSection)}>
@@ -518,6 +619,40 @@ const ItemsTable = ({
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Subscription selector — only for Studio items (PC is walk-in, no subscription) */}
+            {createSection === "Studio" && (
+              <div className="grid gap-2">
+                <Label>{t("items.subscription")}</Label>
+                {loadingSubs ? (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    {t("items.loadingSubscriptions")}
+                  </div>
+                ) : !createUserId ? (
+                  <p className="text-sm text-muted-foreground py-1">{t("items.selectClient")}</p>
+                ) : userSubscriptions.length === 0 ? (
+                  <p className="text-sm text-destructive py-1">{t("items.noActiveSubscriptions")}</p>
+                ) : (
+                  <Select
+                    value={createPackageId}
+                    onValueChange={setCreatePackageId}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={t("items.selectSubscription")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {userSubscriptions.map(sub => (
+                        <SelectItem key={sub.id} value={String(sub.id)}>
+                          {sub.package_name} — {sub.remaining_sessions} sessions, {sub.remaining_weight} kg left
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+            )}
+
             {/* Optional metadata fields */}
             <div className="grid gap-2">
               <Label>{t("items.description")}</Label>
@@ -527,28 +662,43 @@ const ItemsTable = ({
                 placeholder={t("items.descriptionPlaceholder")}
               />
             </div>
-            <div className="grid gap-2">
-              <Label>{t("items.clayType")}</Label>
-              <Select value={createClay} onValueChange={setCreateClay}>
-                <SelectTrigger>
-                  <SelectValue placeholder={t("items.selectClayType")} />
-                </SelectTrigger>
-                <SelectContent>
-                  {CLAY_TYPES.map((c) => (
-                    <SelectItem key={c} value={c}>{t(`items.clay_${c.replace(/-/g, "_")}`)}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+
+            {/* Clay type — only for Studio items (PC ceramics are pre-made by employees).
+                Driven by the admin-managed /clay-types catalog so adding/removing types
+                here reflects what the studio actually keeps in stock. */}
+            {createSection === "Studio" && (
+              <div className="grid gap-2">
+                <Label>{t("items.clayType")}</Label>
+                <Select value={createClay} onValueChange={setCreateClay}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={t("items.selectClayType")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {clayTypes.map((c) => (
+                      <SelectItem key={c.name} value={c.name}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
             <p className="text-sm text-muted-foreground">
-              {t("items.createHint")}
+              {createSection === "PC" ? t("items.createHintPC") : t("items.createHint")}
             </p>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsCreateOpen(false)} disabled={saving}>
               {t("common.cancel")}
             </Button>
-            <Button onClick={handleCreate} disabled={!createUserId || !createSection || !createPackageId || saving}>
+            <Button
+              onClick={handleCreate}
+              disabled={
+                !createUserId ||
+                !createSection ||
+                (createSection === "Studio" && !createPackageId) ||
+                saving
+              }
+            >
               {saving && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
               {t("common.create")}
             </Button>
@@ -563,15 +713,15 @@ const ItemsTable = ({
             <DialogTitle>{t("items.advanceConfirm")}</DialogTitle>
             <DialogDescription>{t("items.advanceWarning")}</DialogDescription>
           </DialogHeader>
-          {advanceTarget && (
+          {advanceTarget && advanceNextStage && (
             <>
               <div className="flex items-center gap-3 py-2">
                 <Badge variant="outline" className={stageBadgeVariant[advanceTarget.stage]}>
                   {t(`items.stage_${advanceTarget.stage.replace(" ", "_")}`)}
                 </Badge>
                 <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                <Badge variant="outline" className={stageBadgeVariant[getNextStage(advanceTarget.stage)!]}>
-                  {t(`items.stage_${getNextStage(advanceTarget.stage)!.replace(" ", "_")}`)}
+                <Badge variant="outline" className={stageBadgeVariant[advanceNextStage]}>
+                  {t(`items.stage_${advanceNextStage.replace(" ", "_")}`)}
                 </Badge>
               </div>
               <p className="text-sm text-muted-foreground">
@@ -592,6 +742,21 @@ const ItemsTable = ({
                   />
                   <p className="text-xs text-muted-foreground">
                     {t("items.advanceWeightPrompt")}
+                  </p>
+                </div>
+              )}
+
+              {/* Glaze type — only shown when advancing into "glaze fired" (Studio) */}
+              {advanceNeedsGlazeType && (
+                <div className="grid gap-2 pt-2">
+                  <Label>{t("items.glazeType")}</Label>
+                  <Input
+                    value={advanceGlaze}
+                    onChange={(e) => setAdvanceGlaze(e.target.value)}
+                    placeholder={t("items.glazeTypePlaceholder")}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {t("items.advanceGlazePrompt")}
                   </p>
                 </div>
               )}
@@ -628,11 +793,27 @@ const ItemsTable = ({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {ALL_STAGES.map((s) => (
+                    {/* PC items live in a smaller stage subset (no drying / bisque / in-progress).
+                        We list ALL valid stages here; rewind validation kicks in on save. */}
+                    {(editTarget.section === "PC" ? PC_ALLOWED_STAGES : ALL_STAGES).map((s) => (
                       <SelectItem key={s} value={s}>{t(`items.stage_${s.replace(" ", "_")}`)}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
+                {/* Rewind warning — only Studio items can have refunds; non-admins can't rewind at all */}
+                {editIsRewind && !isAdmin && (
+                  <p className="text-xs text-destructive">{t("items.rewindAdminOnly")}</p>
+                )}
+                {editIsRewind && isAdmin && (
+                  <div className="text-xs text-amber-500 space-y-1">
+                    <p>{t("items.rewindWarning")}</p>
+                    {editRefundPreview > 0 && (
+                      <p className="font-medium">
+                        {t("items.rewindRefundNote", { amount: editRefundPreview })}
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
               <div className="grid gap-2">
                 <Label>{t("items.description")}</Label>
@@ -642,21 +823,78 @@ const ItemsTable = ({
                   placeholder={t("items.descriptionPlaceholder")}
                 />
               </div>
-              <div className="grid gap-2">
-                <Label>{t("items.clayType")}</Label>
-                <Select value={editClay} onValueChange={setEditClay}>
-                  <SelectTrigger>
-                    <SelectValue placeholder={t("items.selectClayType")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {CLAY_TYPES.map((c) => (
-                      <SelectItem key={c} value={c}>{t(`items.clay_${c.replace(/-/g, "_")}`)}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              {/* Display recorded weights if they exist */}
-              {(editTarget.mid_weight != null || editTarget.final_weight != null) && (
+              {/* Clay type — only for Studio items, pulled from /clay-types catalog */}
+              {editTarget.section === "Studio" && (
+                <div className="grid gap-2">
+                  <Label>{t("items.clayType")}</Label>
+                  <Select value={editClay} onValueChange={setEditClay}>
+                    <SelectTrigger>
+                      <SelectValue placeholder={t("items.selectClayType")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {clayTypes.map((c) => (
+                        <SelectItem key={c.name} value={c.name}>{c.name}</SelectItem>
+                      ))}
+                      {/* If the item already has a clay_type no longer in the catalog,
+                          keep it in the dropdown so it isn't accidentally cleared on save. */}
+                      {editClay && !clayTypes.some(c => c.name === editClay) && (
+                        <SelectItem key={editClay} value={editClay}>{editClay}</SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              {/* Glaze type — Studio only; free-form because we don't manage a catalog.
+                  When the stage jump crosses into "glaze fired" for the first time we
+                  surface a helper so the user knows it's now required. */}
+              {editTarget.section === "Studio" && (
+                <div className="grid gap-2">
+                  <Label>{t("items.glazeType")}</Label>
+                  <Input
+                    value={editGlaze}
+                    onChange={(e) => setEditGlaze(e.target.value)}
+                    placeholder={t("items.glazeTypePlaceholder")}
+                  />
+                  {editCrossesGlazeFired && (
+                    <p className="text-xs text-muted-foreground">{t("items.editGlazeTypePrompt")}</p>
+                  )}
+                </div>
+              )}
+              {/* Mid-weight prompt — shown when the new stage skips past "waiting glaze"
+                  for the first time. Backend deducts this from the linked subscription. */}
+              {editCrossesWaitingGlaze && (
+                <div className="grid gap-2">
+                  <Label>{t("items.midWeight")} ({t("items.weight")})</Label>
+                  <Input
+                    type="number"
+                    min="0.01"
+                    step="0.01"
+                    value={editMidWeight}
+                    onChange={(e) => setEditMidWeight(e.target.value)}
+                    placeholder={t("items.weightPlaceholder")}
+                  />
+                  <p className="text-xs text-muted-foreground">{t("items.editMidWeightPrompt")}</p>
+                </div>
+              )}
+              {/* Final-weight prompt — shown when the new stage skips past "ready" for
+                  the first time. Both weights can be required in a single update
+                  (e.g. drying → ready) and both deduct in one transaction. */}
+              {editCrossesReady && (
+                <div className="grid gap-2">
+                  <Label>{t("items.finalWeight")} ({t("items.weight")})</Label>
+                  <Input
+                    type="number"
+                    min="0.01"
+                    step="0.01"
+                    value={editFinalWeight}
+                    onChange={(e) => setEditFinalWeight(e.target.value)}
+                    placeholder={t("items.weightPlaceholder")}
+                  />
+                  <p className="text-xs text-muted-foreground">{t("items.editFinalWeightPrompt")}</p>
+                </div>
+              )}
+              {/* Display recorded weights if they exist (Studio only — PC has no weight tracking) */}
+              {editTarget.section === "Studio" && (editTarget.mid_weight != null || editTarget.final_weight != null) && (
                 <div className="flex gap-4 text-sm text-muted-foreground border rounded-md p-3">
                   {editTarget.mid_weight != null && (
                     <span>{t("items.midWeight")}: {editTarget.mid_weight} kg</span>
@@ -672,7 +910,7 @@ const ItemsTable = ({
             <Button variant="outline" onClick={() => setEditTarget(null)} disabled={editSaving}>
               {t("common.cancel")}
             </Button>
-            <Button onClick={handleEdit} disabled={editSaving}>
+            <Button onClick={handleEdit} disabled={editSaving || (editIsRewind && !isAdmin) || !editValid}>
               {editSaving && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
               {t("common.save")}
             </Button>

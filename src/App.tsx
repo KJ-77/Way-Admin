@@ -14,6 +14,8 @@ import SubscriptionsPage from "@/pages/subscriptions"
 import TutorsPage from "@/pages/tutors"
 import SchedulePage from "@/pages/schedule"
 import ItemsPage from "@/pages/items"
+import PcItemsPage from "@/pages/pc-items"
+import ClayTypesPage from "@/pages/clay-types"
 import AccountsPage from "@/pages/accounts"
 import UserDetailPage from "@/pages/user-detail"
 import NotFound from "@/pages/not-found"
@@ -41,6 +43,15 @@ const App = () => {
                         <Route path="/tutors" element={<TutorsPage />} />
                         <Route path="/schedule" element={<SchedulePage />} />
                         <Route path="/items" element={<ItemsPage />} />
+                        <Route path="/pc-items" element={<PcItemsPage />} />
+                        <Route
+                          path="/clay-types"
+                          element={
+                            <ProtectedRoute allowedRoles={["admin", "studio-manager"]}>
+                              <ClayTypesPage />
+                            </ProtectedRoute>
+                          }
+                        />
                         <Route
                           path="/accounts"
                           element={

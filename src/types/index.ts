@@ -7,7 +7,9 @@ export type Section = "Studio" | "PC"
 export type PackageStatus = "active" | "expired" | "depleted"
 export type ClassType = "pottery" | "glass" | "canvas" | "mixed-media"
 export type Attendance = "attended" | "booked" | "cancelled" | "cancelled - no charge"
-export type ClayType = "lf-clb-white" | "lf-sio-brown" | "hf-prai-white" | "lf-pa-white"
+// Clay types are admin-managed at runtime (see /clay-types API + clay-types page).
+// Kept as a free-form string here; the UI fetches the active list dynamically.
+export type ClayType = string
 export type TutorSpecialty = "handbuilding" | "wheelthrowing" | "glazing" | "sculpting"
 export type SessionPackage =
   | "hand building explorer"
@@ -70,13 +72,15 @@ export interface UserPackage {
 
 export interface Session {
   id: number
-  user_id: string
-  package_id: number
+  // The only direct link from sessions — user/package are derived via this FK.
+  user_package_id: number
   session_nb: number
   attendance: Attendance
   notes?: string
   created_at: string
-  // Joined from users + packages
+  // Joined via user_packages → users / packages
+  user_id: string
+  package_id: number
   user_name: string
   package_name: string
 }
@@ -106,14 +110,15 @@ export interface ScheduleSlot {
   end_time: string
   tutor_id: number | null
   package: string | null  // class type enum — also serves as the slot's display title
+  is_fully_booked: boolean
   tutor_name: string | null
   created_at: string
   updated_at: string
 }
 
-// Item stage progression: drying → bisque firing → waiting glaze → glaze firing → ready
+// Item stage progression: drying → bisque firing → waiting glaze → glaze firing → ready → picked up
 // "discarded" is a terminal stage set manually via edit, not part of normal progression
-export type ItemStage = "drying" | "bisque fired" | "waiting glaze" | "glaze fired" | "ready" | "discarded"
+export type ItemStage = "drying" | "bisque fired" | "waiting glaze" | "glaze fired" | "ready" | "picked up" | "discarded"
 
 export type ItemSection = "Studio" | "PC"
 
@@ -125,6 +130,7 @@ export interface Item {
   section: ItemSection
   description?: string | null
   clay_type?: ClayType | null
+  glaze_type?: string | null
   mid_weight: number | null
   final_weight: number | null
   created_at: string

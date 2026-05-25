@@ -32,7 +32,8 @@ const UserDetailQuickActions = ({
 
   // ── Session dialog state ──
   const [sessionOpen, setSessionOpen] = useState(false)
-  const [sessionForm, setSessionForm] = useState({ package_id: "", attendance: "attended", notes: "" })
+  // user_package_id = which subscription this session anchors to (sub.id, not sub.package_id)
+  const [sessionForm, setSessionForm] = useState({ user_package_id: "", attendance: "attended", notes: "" })
   const [sessionSaving, setSessionSaving] = useState(false)
 
   // Active subscriptions for the session dialog
@@ -93,8 +94,7 @@ const UserDetailQuickActions = ({
       const res = await apiFetch("/sessions", {
         method: "POST",
         body: JSON.stringify({
-          user_id: user.id,
-          package_id: Number(sessionForm.package_id),
+          user_package_id: Number(sessionForm.user_package_id),
           attendance: sessionForm.attendance,
           notes: sessionForm.notes || undefined,
         }),
@@ -138,7 +138,7 @@ const UserDetailQuickActions = ({
     }
   }
 
-  const sessionValid = sessionForm.package_id && sessionForm.attendance
+  const sessionValid = sessionForm.user_package_id && sessionForm.attendance
 
   return (
     <>
@@ -158,7 +158,7 @@ const UserDetailQuickActions = ({
           size="sm"
           className="gap-1.5"
           onClick={() => {
-            setSessionForm({ package_id: "", attendance: "attended", notes: "" })
+            setSessionForm({ user_package_id: "", attendance: "attended", notes: "" })
             setSessionOpen(true)
           }}
         >
@@ -196,15 +196,15 @@ const UserDetailQuickActions = ({
                 <p className="text-sm text-destructive py-1">{t("sessions.noActiveSubscriptions")}</p>
               ) : (
                 <Select
-                  value={sessionForm.package_id}
-                  onValueChange={(v) => setSessionForm(prev => ({ ...prev, package_id: v }))}
+                  value={sessionForm.user_package_id}
+                  onValueChange={(v) => setSessionForm(prev => ({ ...prev, user_package_id: v }))}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder={t("sessions.selectSubscription")} />
                   </SelectTrigger>
                   <SelectContent>
                     {activeSubscriptions.map(sub => (
-                      <SelectItem key={sub.id} value={String(sub.package_id)}>
+                      <SelectItem key={sub.id} value={String(sub.id)}>
                         {sub.package_name} — {sub.remaining_sessions} sessions, {sub.remaining_weight} kg left
                       </SelectItem>
                     ))}

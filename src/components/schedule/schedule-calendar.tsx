@@ -7,6 +7,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Switch } from "@/components/ui/switch"
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog"
@@ -51,6 +52,7 @@ interface SlotFormData {
   end_time: string
   tutor_id: string    // "" = no tutor
   package: string     // "" = no package — also serves as the slot's display title
+  is_fully_booked: boolean
 }
 
 const emptyForm: SlotFormData = {
@@ -59,6 +61,7 @@ const emptyForm: SlotFormData = {
   end_time: "12:00",
   tutor_id: "none",
   package: "none",
+  is_fully_booked: false,
 }
 
 // --- Helpers ---
@@ -145,6 +148,7 @@ const ScheduleCalendar = () => {
       end_time: formatTime(slot.end_time),
       tutor_id: slot.tutor_id != null ? String(slot.tutor_id) : "none",
       package: slot.package != null ? String(slot.package) : "none",
+      is_fully_booked: !!slot.is_fully_booked,
     })
     setIsFormOpen(true)
   }, [])
@@ -159,6 +163,7 @@ const ScheduleCalendar = () => {
         // "none" sentinel or empty string both map to null
         tutor_id: formData.tutor_id && formData.tutor_id !== "none" ? Number(formData.tutor_id) : null,
         package: formData.package && formData.package !== "none" ? formData.package : null,
+        is_fully_booked: formData.is_fully_booked,
       }
 
       if (editingSlot) {
@@ -317,10 +322,15 @@ const ScheduleCalendar = () => {
                       {/* Slot cards for this day */}
                       {(slotsByDay.get(dayIdx) ?? []).map(slot => {
                         const { top, height } = getSlotPosition(slot)
+                        // Fully-booked slots use a muted red-tinted palette so they're
+                        // visually distinct from bookable slots without disappearing entirely.
+                        const cardClasses = slot.is_fully_booked
+                          ? "bg-destructive/15 border-destructive/40 text-destructive"
+                          : "bg-primary/15 border-primary/40 text-primary"
                         return (
                           <div
                             key={slot.id}
-                            className="absolute inset-x-1 z-10 rounded-md border p-1.5 overflow-hidden cursor-pointer transition-opacity hover:opacity-90 bg-primary/15 border-primary/40 text-primary"
+                            className={`absolute inset-x-1 z-10 rounded-md border p-1.5 overflow-hidden cursor-pointer transition-opacity hover:opacity-90 ${cardClasses}`}
                             style={{ top: `${top}px`, height: `${height}px` }}
                             onClick={() => openEdit(slot)}
                             role="button"
@@ -334,6 +344,11 @@ const ScheduleCalendar = () => {
                             <p className="text-xs opacity-60">
                               {formatTime(slot.start_time)} – {formatTime(slot.end_time)}
                             </p>
+                            {slot.is_fully_booked && (
+                              <p className="text-[10px] font-bold uppercase tracking-wider mt-1">
+                                {t("schedule.isFullyBooked")}
+                              </p>
+                            )}
                           </div>
                         )
                       })}
@@ -438,6 +453,18 @@ const ScheduleCalendar = () => {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+
+            {/* Fully Booked toggle — surfaces on the public client schedule too */}
+            <div className="flex items-center justify-between rounded-md border p-3">
+              <div className="space-y-0.5">
+                <Label className="text-sm">{t("schedule.markFullyBooked")}</Label>
+                <p className="text-xs text-muted-foreground">{t("schedule.fullyBookedHint")}</p>
+              </div>
+              <Switch
+                checked={formData.is_fully_booked}
+                onCheckedChange={val => setFormData(prev => ({ ...prev, is_fully_booked: val }))}
+              />
             </div>
 
           </div>

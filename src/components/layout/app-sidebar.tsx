@@ -10,6 +10,7 @@ import {
   ScrollText,
   GraduationCap,
   Shapes,
+  Paintbrush,
   Settings,
   UserCog,
   Palette,
@@ -45,6 +46,8 @@ const AppSidebar = () => {
   const { user, logout } = useAuth()
 
   const isAdmin = user?.groups.includes("admin")
+  // Both admins + studio-managers can manage clay types (per spec).
+  const canManageClayTypes = !!user?.groups.some((g) => g === "admin" || g === "studio-manager")
 
   const handleLogout = () => {
     logout()
@@ -68,6 +71,7 @@ const AppSidebar = () => {
     { title: t("nav.subscriptions"), url: "/subscriptions", icon: ScrollText },
     { title: t("nav.tutors"), url: "/tutors", icon: GraduationCap },
     { title: t("nav.items"), url: "/items", icon: Shapes },
+    { title: t("nav.pcItems"), url: "/pc-items", icon: Paintbrush },
   ]
 
   const isActive = (url: string) => {
@@ -121,6 +125,21 @@ const AppSidebar = () => {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
+              {canManageClayTypes && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive("/clay-types")}
+                    tooltip={t("nav.clayTypes")}
+                    className="transition-all duration-200"
+                  >
+                    <Link to="/clay-types">
+                      <Palette className="h-4 w-4" />
+                      <span>{t("nav.clayTypes")}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
               {isAdmin && (
                 <SidebarMenuItem>
                   <SidebarMenuButton
