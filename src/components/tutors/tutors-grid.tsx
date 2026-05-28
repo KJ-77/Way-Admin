@@ -19,6 +19,8 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select"
+import { normalizePhone } from "@/lib/utils"
+import ConfirmDialog from "@/components/ui/confirm-dialog"
 import type { Tutor, TutorSpecialty } from "@/types"
 
 const TUTOR_SPECIALTIES: TutorSpecialty[] = ["handbuilding", "wheelthrowing", "glazing", "sculpting"]
@@ -67,6 +69,8 @@ const TutorsGrid = ({
   const [saving, setSaving] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<Tutor | null>(null)
   const [deleting, setDeleting] = useState(false)
+  // Confirm step before editing — create flow saves directly (nothing existing to overwrite)
+  const [confirmEditOpen, setConfirmEditOpen] = useState(false)
 
   const filteredTutors = tutors.filter(tutor =>
     tutor.full_name.toLowerCase().includes(search.toLowerCase()) ||
@@ -99,7 +103,7 @@ const TutorsGrid = ({
       const body: Record<string, unknown> = {
         full_name: formData.full_name,
         email: formData.email,
-        phone: formData.phone,
+        phone: normalizePhone(formData.phone),
         hourly_rate: formData.hourly_rate ? Number(formData.hourly_rate) : null,
         specialty: formData.specialty || null,
         notes: formData.notes || null,
@@ -113,6 +117,7 @@ const TutorsGrid = ({
         toast.success(t("tutors.createSuccess"))
       }
       setIsFormOpen(false)
+      setConfirmEditOpen(false)
       onRefetch()
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t("tutors.operationFailed"))
@@ -324,13 +329,26 @@ const TutorsGrid = ({
             <Button variant="outline" onClick={() => setIsFormOpen(false)} disabled={saving}>
               {t("common.cancel")}
             </Button>
-            <Button onClick={handleSave} disabled={!formData.full_name || saving}>
+            <Button
+              onClick={editingTutor ? () => setConfirmEditOpen(true) : handleSave}
+              disabled={!formData.full_name || saving}
+            >
               {saving && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
               {editingTutor ? t("common.save") : t("common.create")}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* ── Save Confirmation (edit mode only) ── */}
+      <ConfirmDialog
+        open={confirmEditOpen}
+        onOpenChange={setConfirmEditOpen}
+        title={t("common.confirmSaveTitle")}
+        description={t("common.confirmSaveDescription")}
+        loading={saving}
+        onConfirm={handleSave}
+      />
 
       {/* ── Delete Dialog ── */}
       <Dialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>

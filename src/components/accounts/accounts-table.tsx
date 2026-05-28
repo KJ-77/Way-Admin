@@ -37,6 +37,8 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { useAccounts, type DbSyncError } from "@/hooks/use-accounts"
+import { normalizePhone } from "@/lib/utils"
+import ConfirmDialog from "@/components/ui/confirm-dialog"
 import type { AdminAccount, AccountRole } from "@/types"
 
 interface FormData {
@@ -70,6 +72,7 @@ const AccountsTable = () => {
   const [deleting, setDeleting] = useState(false)
   const [syncing, setSyncing] = useState(false)
   const [resettingPassword, setResettingPassword] = useState(false)
+  const [confirmEditOpen, setConfirmEditOpen] = useState(false)
   // Holds the temp password after a successful reset so the admin can copy/share it
   const [tempPassword, setTempPassword] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
@@ -141,7 +144,7 @@ const AccountsTable = () => {
       if (editingAccount) {
         await updateAccount(editingAccount.id, {
           full_name: formData.full_name,
-          phone: formData.phone || undefined,
+          phone: formData.phone ? normalizePhone(formData.phone) : undefined,
           role: formData.role,
         })
         toast.success(t("accounts.updateSuccess"))
@@ -149,12 +152,13 @@ const AccountsTable = () => {
         await createAccount({
           email: formData.email,
           full_name: formData.full_name,
-          phone: formData.phone || undefined,
+          phone: formData.phone ? normalizePhone(formData.phone) : undefined,
           role: formData.role,
         })
         toast.success(t("accounts.createSuccess"))
       }
       setIsFormOpen(false)
+      setConfirmEditOpen(false)
       refetch()
     } catch (err) {
       // Check if this is a partial success (Cognito OK, DB failed)
@@ -382,13 +386,26 @@ const AccountsTable = () => {
             <Button variant="outline" onClick={() => setIsFormOpen(false)} disabled={saving}>
               {t("common.cancel")}
             </Button>
-            <Button onClick={handleSave} disabled={!formData.full_name || !formData.email || saving}>
+            <Button
+              onClick={editingAccount ? () => setConfirmEditOpen(true) : handleSave}
+              disabled={!formData.full_name || !formData.email || saving}
+            >
               {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {editingAccount ? t("common.save") : t("common.create")}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Save Confirmation (edit mode only) */}
+      <ConfirmDialog
+        open={confirmEditOpen}
+        onOpenChange={setConfirmEditOpen}
+        title={t("common.confirmSaveTitle")}
+        description={t("common.confirmSaveDescription")}
+        loading={saving}
+        onConfirm={handleSave}
+      />
 
       {/* DB Sync Failed Dialog — shows when Cognito succeeded but DB insert failed */}
       <Dialog open={isSyncDialogOpen} onOpenChange={setIsSyncDialogOpen}>

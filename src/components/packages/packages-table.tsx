@@ -16,6 +16,7 @@ import {
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import ConfirmDialog from "@/components/ui/confirm-dialog"
 import type { Package } from "@/types"
 
 interface PackagesTableProps {
@@ -55,6 +56,7 @@ const PackagesTable = ({
   const [formData, setFormData] = useState<FormData>(emptyForm)
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [confirmEditOpen, setConfirmEditOpen] = useState(false)
   // tracks which package cards have their notes expanded
   const [expandedNotes, setExpandedNotes] = useState<Set<number>>(new Set())
 
@@ -95,6 +97,7 @@ const PackagesTable = ({
         toast.success(t("packages.createSuccess"))
       }
       setIsFormOpen(false)
+      setConfirmEditOpen(false)
       onRefetch()
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t("packages.operationFailed"))
@@ -323,13 +326,26 @@ const PackagesTable = ({
             <Button variant="outline" onClick={() => setIsFormOpen(false)} disabled={saving}>
               {t("common.cancel")}
             </Button>
-            <Button onClick={handleSave} disabled={!formData.package_type || saving}>
+            <Button
+              onClick={editingPackage ? () => setConfirmEditOpen(true) : handleSave}
+              disabled={!formData.package_type || saving}
+            >
               {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {editingPackage ? t("common.save") : t("common.create")}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Save Confirmation (edit mode only) */}
+      <ConfirmDialog
+        open={confirmEditOpen}
+        onOpenChange={setConfirmEditOpen}
+        title={t("common.confirmSaveTitle")}
+        description={t("common.confirmSaveDescription")}
+        loading={saving}
+        onConfirm={handleSave}
+      />
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>

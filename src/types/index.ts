@@ -35,6 +35,9 @@ export interface User {
   status?: UserStatus
   section?: Section
   notes?: string
+  // Soft-delete flag. Inactive clients are hidden from the default clients list
+  // (toggle "show deleted" to reveal them). Their Cognito login is disabled.
+  is_active: boolean
   created_at: string
   updated_at: string
 }
@@ -103,6 +106,9 @@ export interface ActivityItem {
   timestamp: string
 }
 
+// One slot in the active weekly template merged with the override (if any)
+// for the week currently being viewed. The backend always merges before
+// responding — the frontend never has to think about the join.
 export interface ScheduleSlot {
   id: number
   day_of_week: number  // 0=Monday, 6=Sunday
@@ -110,10 +116,30 @@ export interface ScheduleSlot {
   end_time: string
   tutor_id: number | null
   package: string | null  // class type enum — also serves as the slot's display title
-  is_fully_booked: boolean
   tutor_name: string | null
+  deleted_at: string | null
   created_at: string
   updated_at: string
+  // ── Week-scoped fields (merged from schedule_overrides) ──
+  week_start: string         // YYYY-MM-DD (Monday, Asia/Beirut)
+  is_fully_booked: boolean   // effective value for this week
+  is_cancelled: boolean
+  cancel_reason: string | null
+  override_id: number | null // null when no override exists for (slot, week)
+}
+
+// Returned by GET /schedule?week=…
+export interface ScheduleWeekResponse {
+  week_start: string
+  slots: ScheduleSlot[]
+}
+
+// Body for PUT /schedule/:id/override
+export interface UpsertOverridePayload {
+  week_start: string
+  is_fully_booked?: boolean
+  is_cancelled?: boolean
+  cancel_reason?: string | null
 }
 
 // Item stage progression: drying → bisque firing → waiting glaze → glaze firing → ready → picked up

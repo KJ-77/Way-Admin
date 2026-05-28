@@ -47,7 +47,7 @@ const UserDetailPage = () => {
 
   return (
     <div className="space-y-6">
-      <UserProfileHeader user={user}>
+      <UserProfileHeader user={user} onUserUpdated={refetchUser}>
         <UserDetailQuickActions
           user={user}
           subscriptions={subscriptions}

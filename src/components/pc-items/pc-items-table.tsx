@@ -25,6 +25,7 @@ import {
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import UserCombobox from "@/components/ui/user-combobox"
+import ConfirmDialog from "@/components/ui/confirm-dialog"
 import { useAuth } from "@/contexts/auth-context"
 import type { Item, ItemStage, User } from "@/types"
 
@@ -121,6 +122,7 @@ const PcItemsTable = ({
   const [editStage, setEditStage] = useState<ItemStage>("glaze fired")
   const [editDescription, setEditDescription] = useState("")
   const [editSaving, setEditSaving] = useState(false)
+  const [confirmEditOpen, setConfirmEditOpen] = useState(false)
 
   // Delete dialog
   const [deleteTarget, setDeleteTarget] = useState<Item | null>(null)
@@ -220,6 +222,7 @@ const PcItemsTable = ({
       })
       toast.success(t("pcItems.updateSuccess"))
       setEditTarget(null)
+      setConfirmEditOpen(false)
       onRefetch()
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t("pcItems.operationFailed"))
@@ -318,6 +321,7 @@ const PcItemsTable = ({
                     <TableHead className="w-[60px]">ID</TableHead>
                     <TableHead>{t("items.client")}</TableHead>
                     <TableHead>{t("items.stage")}</TableHead>
+                    <TableHead className="hidden lg:table-cell">{t("items.description")}</TableHead>
                     <TableHead className="hidden md:table-cell">{t("items.created")}</TableHead>
                     <TableHead className="hidden md:table-cell">{t("items.updated")}</TableHead>
                     <TableHead className="w-[140px]">{t("items.advance")}</TableHead>
@@ -327,7 +331,7 @@ const PcItemsTable = ({
                 <TableBody>
                   {filtered.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                         {t("common.noResults")}
                       </TableCell>
                     </TableRow>
@@ -346,6 +350,9 @@ const PcItemsTable = ({
                             <Badge variant="outline" className={stageBadgeVariant[item.stage]}>
                               {t(`items.stage_${item.stage.replace(" ", "_")}`)}
                             </Badge>
+                          </TableCell>
+                          <TableCell className="hidden lg:table-cell text-muted-foreground text-sm max-w-[260px] truncate">
+                            {item.description || "—"}
                           </TableCell>
                           <TableCell className="hidden md:table-cell text-muted-foreground text-sm">
                             {formatDateTime(item.created_at)}
@@ -530,13 +537,26 @@ const PcItemsTable = ({
             <Button variant="outline" onClick={() => setEditTarget(null)} disabled={editSaving}>
               {t("common.cancel")}
             </Button>
-            <Button onClick={handleEdit} disabled={editSaving || (editIsRewind && !isAdmin)}>
+            <Button
+              onClick={() => setConfirmEditOpen(true)}
+              disabled={editSaving || (editIsRewind && !isAdmin)}
+            >
               {editSaving && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
               {t("common.save")}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* ── Save Confirmation Dialog ── */}
+      <ConfirmDialog
+        open={confirmEditOpen}
+        onOpenChange={setConfirmEditOpen}
+        title={t("common.confirmSaveTitle")}
+        description={t("common.confirmSaveDescription")}
+        loading={editSaving}
+        onConfirm={handleEdit}
+      />
 
       {/* ── Delete Dialog ── */}
       <Dialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>

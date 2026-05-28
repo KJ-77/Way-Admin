@@ -1,12 +1,17 @@
+import { useState } from "react"
 import { useNavigate } from "react-router-dom"
+import { useTranslation } from "react-i18next"
 import { format } from "date-fns"
+import { toast } from "sonner"
 import {
-  ArrowLeft, Mail, Phone, Calendar, MapPin,
+  ArrowLeft, Mail, Phone, Calendar, MapPin, AlertTriangle, Loader2, RotateCcw,
 } from "lucide-react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import ConfirmDialog from "@/components/ui/confirm-dialog"
+import { apiFetch } from "@/lib/api"
 import type { User } from "@/types"
 
 const statusColors: Record<string, string> = {
@@ -28,15 +33,39 @@ const loyaltyColors: Record<string, string> = {
 
 interface UserProfileHeaderProps {
   user: User
+  onUserUpdated?: () => void
   children?: React.ReactNode
 }
 
-const UserProfileHeader = ({ user, children }: UserProfileHeaderProps) => {
+const UserProfileHeader = ({ user, onUserUpdated, children }: UserProfileHeaderProps) => {
   const navigate = useNavigate()
+  const { t } = useTranslation()
   const initials = user.full_name.split(" ").map(n => n[0]).join("")
   const memberSince = user.first_visit
     ? format(new Date(user.first_visit), "MMMM yyyy")
     : null
+
+  // Restore flow — only visible when viewing a soft-deleted client
+  const [confirmRestoreOpen, setConfirmRestoreOpen] = useState(false)
+  const [restoring, setRestoring] = useState(false)
+
+  const handleRestore = async () => {
+    setRestoring(true)
+    try {
+      const res = await apiFetch(`/users/${user.id}/restore`, { method: "POST" })
+      if (!res.ok) {
+        const err = await res.json().catch(() => null)
+        throw new Error(err?.message || err?.error || `Failed: ${res.status}`)
+      }
+      toast.success(t("users.restoreSuccess", "Client restored"))
+      setConfirmRestoreOpen(false)
+      onUserUpdated?.()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t("users.restoreFailed", "Failed to restore client"))
+    } finally {
+      setRestoring(false)
+    }
+  }
 
   return (
     <Card>
@@ -47,6 +76,25 @@ const UserProfileHeader = ({ user, children }: UserProfileHeaderProps) => {
           </Button>
           <span className="text-sm text-muted-foreground">Back to Clients</span>
         </div>
+
+        {/* Deleted-client banner with Restore action */}
+        {!user.is_active && (
+          <div className="mb-4 rounded-md border border-red-500/30 bg-red-500/5 p-3 flex items-center justify-between gap-3">
+            <div className="flex items-start gap-2 text-sm text-red-400">
+              <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+              <span>{t("users.deletedBanner", "This client has been deleted. Their data is preserved and their login is disabled.")}</span>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setConfirmRestoreOpen(true)}
+              disabled={restoring}
+            >
+              {restoring ? <Loader2 className="me-2 h-3.5 w-3.5 animate-spin" /> : <RotateCcw className="me-2 h-3.5 w-3.5" />}
+              {t("users.restore", "Restore")}
+            </Button>
+          </div>
+        )}
 
         <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
           <Avatar className="h-20 w-20 shrink-0">
@@ -95,6 +143,15 @@ const UserProfileHeader = ({ user, children }: UserProfileHeaderProps) => {
           </div>
         </div>
       </CardContent>
+
+      <ConfirmDialog
+        open={confirmRestoreOpen}
+        onOpenChange={setConfirmRestoreOpen}
+        title={t("users.restoreConfirmTitle", "Restore this client?")}
+        description={t("users.restoreConfirmDescription", "This client will reappear in the active clients list and their login will be re-enabled.")}
+        loading={restoring}
+        onConfirm={handleRestore}
+      />
     </Card>
   )
 }

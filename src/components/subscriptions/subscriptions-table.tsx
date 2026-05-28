@@ -27,6 +27,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Textarea } from "@/components/ui/textarea"
 import { apiFetch } from "@/lib/api"
 import UserCombobox from "@/components/ui/user-combobox"
+import ConfirmDialog from "@/components/ui/confirm-dialog"
 import type { UserPackage, User, Package, PackageStatus, Attendance } from "@/types"
 
 // ── Props ──
@@ -92,6 +93,7 @@ const SubscriptionsTable = ({
   const [editForm, setEditForm] = useState<EditFormData>(emptyEditForm)
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [confirmEditOpen, setConfirmEditOpen] = useState(false)
 
   // Add-session-from-subscription dialog state
   const [isSessionOpen, setIsSessionOpen] = useState(false)
@@ -166,6 +168,7 @@ const SubscriptionsTable = ({
       })
       toast.success(t("subscriptions.updateSuccess"))
       setIsEditOpen(false)
+      setConfirmEditOpen(false)
       onRefetch()
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t("subscriptions.operationFailed"))
@@ -493,13 +496,23 @@ const SubscriptionsTable = ({
             <Button variant="outline" onClick={() => setIsEditOpen(false)} disabled={saving}>
               {t("common.cancel")}
             </Button>
-            <Button onClick={handleEdit} disabled={saving}>
+            <Button onClick={() => setConfirmEditOpen(true)} disabled={saving}>
               {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {t("common.save")}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* ── Save Confirmation Dialog ── */}
+      <ConfirmDialog
+        open={confirmEditOpen}
+        onOpenChange={setConfirmEditOpen}
+        title={t("common.confirmSaveTitle")}
+        description={t("common.confirmSaveDescription")}
+        loading={saving}
+        onConfirm={handleEdit}
+      />
 
       {/* ── Delete Dialog — strong warning + recommendation ── */}
       <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>

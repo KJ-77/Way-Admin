@@ -26,6 +26,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { apiFetch } from "@/lib/api"
 import UserCombobox from "@/components/ui/user-combobox"
+import ConfirmDialog from "@/components/ui/confirm-dialog"
 import type { Session, User, UserPackage, Attendance } from "@/types"
 
 // Maps attendance enum values to translation keys (handles the "cancelled - no charge" key)
@@ -117,6 +118,7 @@ const SessionsTable = ({
   const [editForm, setEditForm] = useState<EditFormData>(emptyEditForm)
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [confirmEditOpen, setConfirmEditOpen] = useState(false)
 
   // Per-user active subscriptions for the create dialog
   const [userSubscriptions, setUserSubscriptions] = useState<UserPackage[]>([])
@@ -213,6 +215,7 @@ const SessionsTable = ({
       })
       toast.success(t("sessions.updateSuccess"))
       setIsEditOpen(false)
+      setConfirmEditOpen(false)
       onRefetch()
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t("sessions.operationFailed"))
@@ -536,13 +539,22 @@ const SessionsTable = ({
             <Button variant="outline" onClick={() => setIsEditOpen(false)} disabled={saving}>
               {t("common.cancel")}
             </Button>
-            <Button onClick={handleEdit} disabled={saving}>
+            <Button onClick={() => setConfirmEditOpen(true)} disabled={saving}>
               {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {t("common.save")}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={confirmEditOpen}
+        onOpenChange={setConfirmEditOpen}
+        title={t("common.confirmSaveTitle")}
+        description={t("common.confirmSaveDescription")}
+        loading={saving}
+        onConfirm={handleEdit}
+      />
 
       {/* ── Delete Session Dialog ── */}
       <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>

@@ -8,7 +8,8 @@ export interface CreateUserResponse {
   tempPassword: string | null
 }
 
-export function useUsers() {
+export function useUsers(opts: { includeDeleted?: boolean } = {}) {
+  const { includeDeleted = false } = opts
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -17,7 +18,8 @@ export function useUsers() {
     try {
       setLoading(true)
       setError(null)
-      const response = await apiFetch("/users")
+      const path = includeDeleted ? "/users?include_deleted=true" : "/users"
+      const response = await apiFetch(path)
       if (!response.ok) throw new Error(`Failed to fetch users: ${response.status}`)
       const data = await response.json()
       setUsers(data)
@@ -26,7 +28,7 @@ export function useUsers() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [includeDeleted])
 
   useEffect(() => {
     fetchUsers()
@@ -64,6 +66,7 @@ export function useUsers() {
     return response.json()
   }
 
+  // Soft-delete — backend flips is_active=false and disables the Cognito user.
   const deleteUser = async (id: string): Promise<void> => {
     const response = await apiFetch(`/users/${id}`, { method: "DELETE" })
     if (!response.ok) {
@@ -72,5 +75,15 @@ export function useUsers() {
     }
   }
 
-  return { users, loading, error, refetch: fetchUsers, createUser, updateUser, deleteUser }
+  // Reverses a soft-delete — flips is_active=true and re-enables the Cognito login.
+  const restoreUser = async (id: string): Promise<User> => {
+    const response = await apiFetch(`/users/${id}/restore`, { method: "POST" })
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null)
+      throw new Error(errorData?.message || errorData?.error || `Failed to restore client: ${response.status}`)
+    }
+    return response.json()
+  }
+
+  return { users, loading, error, refetch: fetchUsers, createUser, updateUser, deleteUser, restoreUser }
 }

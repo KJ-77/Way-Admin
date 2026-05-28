@@ -22,6 +22,8 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Switch } from "@/components/ui/switch"
+import { Label } from "@/components/ui/label"
 import AddUserDialog from "@/components/users/add-user-dialog"
 import type { User, Tutor, UserStatus, Level, Section } from "@/types"
 import type { CreateUserResponse } from "@/hooks/use-users"
@@ -35,6 +37,10 @@ interface UsersTableProps {
   onCreateUser: (body: Record<string, unknown>) => Promise<CreateUserResponse>
   onUpdateUser: (id: string, body: Record<string, unknown>) => Promise<User>
   onDeleteUser: (id: string) => Promise<void>
+  // Controls whether soft-deleted clients are included — lifted to the page so toggling
+  // re-runs the API query with ?include_deleted=true.
+  showDeleted: boolean
+  onShowDeletedChange: (v: boolean) => void
 }
 
 const statusColors: Record<string, string> = {
@@ -54,7 +60,10 @@ const loyaltyColors: Record<string, string> = {
   High: "bg-amber-500/15 text-amber-400 border-amber-500/30",
 }
 
-const UsersTable = ({ users, tutors, loading, error, onRefetch, onCreateUser, onUpdateUser, onDeleteUser }: UsersTableProps) => {
+const UsersTable = ({
+  users, tutors, loading, error, onRefetch, onCreateUser, onUpdateUser, onDeleteUser,
+  showDeleted, onShowDeletedChange,
+}: UsersTableProps) => {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const [search, setSearch] = useState("")
@@ -166,6 +175,13 @@ const UsersTable = ({ users, tutors, loading, error, onRefetch, onCreateUser, on
                 <SelectItem value="PC">PC</SelectItem>
               </SelectContent>
             </Select>
+            {/* Toggle to surface soft-deleted clients alongside active ones */}
+            <div className="flex items-center gap-2 px-2">
+              <Switch id="show-deleted" checked={showDeleted} onCheckedChange={onShowDeletedChange} />
+              <Label htmlFor="show-deleted" className="text-sm whitespace-nowrap cursor-pointer">
+                {t("users.showDeleted", "Show deleted")}
+              </Label>
+            </div>
           </div>
         </div>
 
@@ -206,7 +222,7 @@ const UsersTable = ({ users, tutors, loading, error, onRefetch, onCreateUser, on
                     filteredUsers.map((user) => (
                       <TableRow
                         key={user.id}
-                        className="cursor-pointer"
+                        className={`cursor-pointer ${!user.is_active ? "opacity-60" : ""}`}
                         onClick={() => navigate(`/users/${user.id}`)}
                       >
                         <TableCell>
@@ -217,7 +233,14 @@ const UsersTable = ({ users, tutors, loading, error, onRefetch, onCreateUser, on
                               </AvatarFallback>
                             </Avatar>
                             <div>
-                              <p className="font-medium text-sm">{user.full_name}</p>
+                              <p className="font-medium text-sm flex items-center gap-1.5">
+                                {user.full_name}
+                                {!user.is_active && (
+                                  <Badge variant="outline" className="bg-red-500/15 text-red-400 border-red-500/30 text-[10px] px-1.5 py-0">
+                                    {t("users.deleted", "Deleted")}
+                                  </Badge>
+                                )}
+                              </p>
                               <p className="text-xs text-muted-foreground md:hidden">{user.email || user.phone}</p>
                             </div>
                           </div>
@@ -269,8 +292,10 @@ const UsersTable = ({ users, tutors, loading, error, onRefetch, onCreateUser, on
                                 {t("users.edit")}
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
+                              {/* Already-deleted users can't be deleted again; restoration lives on the user-detail page */}
                               <DropdownMenuItem
                                 className="text-destructive focus:text-destructive"
+                                disabled={!user.is_active}
                                 onClick={() => { setDeleteTarget(user); setIsDeleteOpen(true) }}
                               >
                                 <Trash2 className="me-2 h-4 w-4" />
@@ -311,7 +336,9 @@ const UsersTable = ({ users, tutors, loading, error, onRefetch, onCreateUser, on
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{t("users.deleteConfirm", "Delete Client")}</DialogTitle>
-          <DialogDescription>{t("users.deleteWarning", "Are you sure? This will remove the client from both the database and their login account.")}</DialogDescription>
+          <DialogDescription>
+            {t("users.deleteWarning", "This client will be hidden from the clients list and their login will be disabled. Their history (sessions, items, subscriptions) is preserved and the client can be restored later.")}
+          </DialogDescription>
         </DialogHeader>
         {deleteTarget && (
           <p className="text-sm text-muted-foreground">

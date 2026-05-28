@@ -25,6 +25,7 @@ import {
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import UserCombobox from "@/components/ui/user-combobox"
+import ConfirmDialog from "@/components/ui/confirm-dialog"
 import { apiFetch } from "@/lib/api"
 import { useClayTypes } from "@/hooks/use-clay-types"
 import { useAuth } from "@/contexts/auth-context"
@@ -41,7 +42,6 @@ const PC_PROGRESSION: ItemStage[] = ["glaze fired", "ready", "picked up"]
 const PC_ALLOWED_STAGES: ItemStage[] = ["glaze fired", "ready", "picked up", "discarded"]
 // All stages including terminal "discarded" (used in Studio filters + edit dropdown)
 const ALL_STAGES: ItemStage[] = [...STUDIO_PROGRESSION, "discarded"]
-const SECTIONS: ItemSection[] = ["Studio", "PC"]
 
 // Stages that require a weight input when advancing to them — Studio only
 const STUDIO_WEIGHT_STAGES = new Set<ItemStage>(["waiting glaze", "ready"])
@@ -141,15 +141,14 @@ const ItemsTable = ({
   const { clayTypes } = useClayTypes()
 
   // ── State ──
+  // This page is Studio-only — PC items have their own page (/pc-items)
   const [search, setSearch] = useState("")
   const [stageFilter, setStageFilter] = useState<string>("all")
-  const [sectionFilter, setSectionFilter] = useState<string>("all")
   const [sortBy, setSortBy] = useState<SortOption>("id")
 
   // Create dialog
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [createUserId, setCreateUserId] = useState("")
-  const [createSection, setCreateSection] = useState<ItemSection | "">("")
   const [createDescription, setCreateDescription] = useState("")
   const [createClay, setCreateClay] = useState("")
   const [createPackageId, setCreatePackageId] = useState("")
@@ -176,14 +175,16 @@ const ItemsTable = ({
   const [editMidWeight, setEditMidWeight] = useState("")
   const [editFinalWeight, setEditFinalWeight] = useState("")
   const [editSaving, setEditSaving] = useState(false)
+  // Confirmation step before the actual API call fires
+  const [confirmEditOpen, setConfirmEditOpen] = useState(false)
 
   // Delete dialog
   const [deleteTarget, setDeleteTarget] = useState<Item | null>(null)
   const [deleting, setDeleting] = useState(false)
 
-  // Fetch active subscriptions when user changes in create form — only matters for Studio items
+  // Fetch active subscriptions when user changes in create form (Studio items only)
   useEffect(() => {
-    if (!createUserId || createSection === "PC") {
+    if (!createUserId) {
       setUserSubscriptions([])
       return
     }
@@ -205,30 +206,31 @@ const ItemsTable = ({
     }
     fetchSubs()
     return () => { cancelled = true }
-  }, [createUserId, createSection])
+  }, [createUserId])
 
   // ── Filtering + sorting ──
+  // Studio-only — PC items live on the /pc-items page
+  const studioItems = useMemo(() => items.filter((item) => item.section === "Studio"), [items])
+
   const filtered = useMemo(() => {
-    const result = items.filter((item) => {
+    const result = studioItems.filter((item) => {
       const matchesSearch = !search ||
         item.user_name?.toLowerCase().includes(search.toLowerCase()) ||
         item.id.toString(16).toUpperCase().includes(search.toUpperCase())
       const matchesStage = stageFilter === "all" || item.stage === stageFilter
-      const matchesSection = sectionFilter === "all" || item.section === sectionFilter
-      return matchesSearch && matchesStage && matchesSection
+      return matchesSearch && matchesStage
     })
     // Sort: id (default), or by created_at date
     if (sortBy === "created_desc") result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
     else if (sortBy === "created_asc") result.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
     else result.sort((a, b) => a.id - b.id)
     return result
-  }, [items, search, stageFilter, sectionFilter, sortBy])
+  }, [studioItems, search, stageFilter, sortBy])
 
   // ── Handlers ──
 
   const openCreate = () => {
     setCreateUserId("")
-    setCreateSection("")
     setCreateDescription("")
     setCreateClay("")
     setCreatePackageId("")
@@ -239,17 +241,14 @@ const ItemsTable = ({
   const handleCreate = async () => {
     setSaving(true)
     try {
-      // PC items: no subscription, start at "glaze fired", no clay (pre-made ceramics)
-      // Studio items: linked subscription, default stage ("drying"), optional clay type
-      // glaze_type is NOT prompted at creation — it's captured when the item advances to "glaze fired"
-      const isPC = createSection === "PC"
+      // Studio items only on this page — linked subscription required, default stage "drying",
+      // optional clay type. glaze_type is captured later when the item advances to "glaze fired".
       await onCreateItem({
         user_id: createUserId,
-        user_package_id: isPC ? null : Number(createPackageId),
-        section: createSection,
-        stage: isPC ? "glaze fired" : undefined,
+        user_package_id: Number(createPackageId),
+        section: "Studio",
         description: createDescription || null,
-        clay_type: isPC ? null : (createClay || null),
+        clay_type: createClay || null,
       })
       toast.success(t("items.createSuccess"))
       setIsCreateOpen(false)
@@ -332,6 +331,7 @@ const ItemsTable = ({
       await onUpdateItem(editTarget.id, body)
       toast.success(t("items.updateSuccess"))
       setEditTarget(null)
+      setConfirmEditOpen(false)
       onRefetch()
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t("items.operationFailed"))
@@ -436,17 +436,6 @@ const ItemsTable = ({
                 className="ps-9"
               />
             </div>
-            <Select value={sectionFilter} onValueChange={setSectionFilter}>
-              <SelectTrigger className="w-[140px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t("items.allSections")}</SelectItem>
-                {SECTIONS.map((s) => (
-                  <SelectItem key={s} value={s}>{s}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
             <Select value={stageFilter} onValueChange={setStageFilter}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue />
@@ -490,8 +479,9 @@ const ItemsTable = ({
                   <TableRow>
                     <TableHead className="w-[60px]">ID</TableHead>
                     <TableHead>{t("items.client")}</TableHead>
-                    <TableHead>{t("items.section")}</TableHead>
                     <TableHead>{t("items.stage")}</TableHead>
+                    <TableHead className="hidden lg:table-cell">{t("items.clayType")}</TableHead>
+                    <TableHead className="hidden lg:table-cell">{t("items.glazeType")}</TableHead>
                     <TableHead className="hidden md:table-cell">{t("items.created")}</TableHead>
                     <TableHead className="hidden md:table-cell">{t("items.updated")}</TableHead>
                     <TableHead className="w-[140px]">{t("items.advance")}</TableHead>
@@ -501,7 +491,7 @@ const ItemsTable = ({
                 <TableBody>
                   {filtered.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                         {t("common.noResults")}
                       </TableCell>
                     </TableRow>
@@ -517,12 +507,15 @@ const ItemsTable = ({
                           <TableCell className="font-mono text-xs">{item.id.toString(16).toUpperCase()}</TableCell>
                           <TableCell className="font-medium">{item.user_name || item.user_id}</TableCell>
                           <TableCell>
-                            <Badge variant="outline" className="text-xs">{item.section}</Badge>
-                          </TableCell>
-                          <TableCell>
                             <Badge variant="outline" className={stageBadgeVariant[item.stage]}>
                               {t(`items.stage_${item.stage.replace(" ", "_")}`)}
                             </Badge>
+                          </TableCell>
+                          <TableCell className="hidden lg:table-cell text-muted-foreground text-sm">
+                            {item.clay_type || "—"}
+                          </TableCell>
+                          <TableCell className="hidden lg:table-cell text-muted-foreground text-sm">
+                            {item.glaze_type || "—"}
                           </TableCell>
                           <TableCell className="hidden md:table-cell text-muted-foreground text-sm">
                             {formatDateTime(item.created_at)}
@@ -581,7 +574,7 @@ const ItemsTable = ({
                 </TableBody>
               </Table>
               <div className="text-xs text-muted-foreground mt-3">
-                {t("common.showing")} {filtered.length} {t("common.of")} {items.length} {t("common.results")}
+                {t("common.showing")} {filtered.length} {t("common.of")} {studioItems.length} {t("common.results")}
               </div>
             </>
           )}
@@ -606,52 +599,36 @@ const ItemsTable = ({
               />
             </div>
 
+            {/* Subscription selector — Studio items require a linked subscription */}
             <div className="grid gap-2">
-              <Label>{t("items.section")}</Label>
-              <Select value={createSection} onValueChange={(v) => setCreateSection(v as ItemSection)}>
-                <SelectTrigger>
-                  <SelectValue placeholder={t("items.selectSection")} />
-                </SelectTrigger>
-                <SelectContent>
-                  {SECTIONS.map((s) => (
-                    <SelectItem key={s} value={s}>{s}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label>{t("items.subscription")}</Label>
+              {loadingSubs ? (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  {t("items.loadingSubscriptions")}
+                </div>
+              ) : !createUserId ? (
+                <p className="text-sm text-muted-foreground py-1">{t("items.selectClient")}</p>
+              ) : userSubscriptions.length === 0 ? (
+                <p className="text-sm text-destructive py-1">{t("items.noActiveSubscriptions")}</p>
+              ) : (
+                <Select
+                  value={createPackageId}
+                  onValueChange={setCreatePackageId}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={t("items.selectSubscription")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {userSubscriptions.map(sub => (
+                      <SelectItem key={sub.id} value={String(sub.id)}>
+                        {sub.package_name} — {sub.remaining_sessions} sessions, {sub.remaining_weight} kg left
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
-
-            {/* Subscription selector — only for Studio items (PC is walk-in, no subscription) */}
-            {createSection === "Studio" && (
-              <div className="grid gap-2">
-                <Label>{t("items.subscription")}</Label>
-                {loadingSubs ? (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    {t("items.loadingSubscriptions")}
-                  </div>
-                ) : !createUserId ? (
-                  <p className="text-sm text-muted-foreground py-1">{t("items.selectClient")}</p>
-                ) : userSubscriptions.length === 0 ? (
-                  <p className="text-sm text-destructive py-1">{t("items.noActiveSubscriptions")}</p>
-                ) : (
-                  <Select
-                    value={createPackageId}
-                    onValueChange={setCreatePackageId}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={t("items.selectSubscription")} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {userSubscriptions.map(sub => (
-                        <SelectItem key={sub.id} value={String(sub.id)}>
-                          {sub.package_name} — {sub.remaining_sessions} sessions, {sub.remaining_weight} kg left
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              </div>
-            )}
 
             {/* Optional metadata fields */}
             <div className="grid gap-2">
@@ -663,28 +640,23 @@ const ItemsTable = ({
               />
             </div>
 
-            {/* Clay type — only for Studio items (PC ceramics are pre-made by employees).
-                Driven by the admin-managed /clay-types catalog so adding/removing types
-                here reflects what the studio actually keeps in stock. */}
-            {createSection === "Studio" && (
-              <div className="grid gap-2">
-                <Label>{t("items.clayType")}</Label>
-                <Select value={createClay} onValueChange={setCreateClay}>
-                  <SelectTrigger>
-                    <SelectValue placeholder={t("items.selectClayType")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {clayTypes.map((c) => (
-                      <SelectItem key={c.name} value={c.name}>{c.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
+            {/* Clay type — driven by the admin-managed /clay-types catalog so adding/removing
+                types here reflects what the studio actually keeps in stock. */}
+            <div className="grid gap-2">
+              <Label>{t("items.clayType")}</Label>
+              <Select value={createClay} onValueChange={setCreateClay}>
+                <SelectTrigger>
+                  <SelectValue placeholder={t("items.selectClayType")} />
+                </SelectTrigger>
+                <SelectContent>
+                  {clayTypes.map((c) => (
+                    <SelectItem key={c.name} value={c.name}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-            <p className="text-sm text-muted-foreground">
-              {createSection === "PC" ? t("items.createHintPC") : t("items.createHint")}
-            </p>
+            <p className="text-sm text-muted-foreground">{t("items.createHint")}</p>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsCreateOpen(false)} disabled={saving}>
@@ -692,12 +664,7 @@ const ItemsTable = ({
             </Button>
             <Button
               onClick={handleCreate}
-              disabled={
-                !createUserId ||
-                !createSection ||
-                (createSection === "Studio" && !createPackageId) ||
-                saving
-              }
+              disabled={!createUserId || !createPackageId || saving}
             >
               {saving && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
               {t("common.create")}
@@ -910,13 +877,26 @@ const ItemsTable = ({
             <Button variant="outline" onClick={() => setEditTarget(null)} disabled={editSaving}>
               {t("common.cancel")}
             </Button>
-            <Button onClick={handleEdit} disabled={editSaving || (editIsRewind && !isAdmin) || !editValid}>
+            <Button
+              onClick={() => setConfirmEditOpen(true)}
+              disabled={editSaving || (editIsRewind && !isAdmin) || !editValid}
+            >
               {editSaving && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
               {t("common.save")}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* ── Save Confirmation Dialog ── */}
+      <ConfirmDialog
+        open={confirmEditOpen}
+        onOpenChange={setConfirmEditOpen}
+        title={t("common.confirmSaveTitle")}
+        description={t("common.confirmSaveDescription")}
+        loading={editSaving}
+        onConfirm={handleEdit}
+      />
 
       {/* ── Delete Dialog ── */}
       <Dialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>

@@ -19,7 +19,8 @@ import {
 import {
   Popover, PopoverContent, PopoverTrigger,
 } from "@/components/ui/popover"
-import { cn } from "@/lib/utils"
+import { cn, normalizePhone } from "@/lib/utils"
+import ConfirmDialog from "@/components/ui/confirm-dialog"
 import type { User, Gender, Level, Loyalty, ReferralSource, UserStatus, Section } from "@/types"
 import type { CreateUserResponse } from "@/hooks/use-users"
 
@@ -163,6 +164,8 @@ const AddUserDialog = ({ open, onOpenChange, onSuccess, onCreateUser, onUpdateUs
   const [submitError, setSubmitError] = useState<string | null>(null)
   // In edit mode, optional fields are always visible
   const [showOptional, setShowOptional] = useState(false)
+  // Save confirmation (edit mode only — create has its own success/temp-password flow)
+  const [confirmEditOpen, setConfirmEditOpen] = useState(false)
 
   // Success state for the temp password dialog (create mode only)
   const [successData, setSuccessData] = useState<{
@@ -191,7 +194,7 @@ const AddUserDialog = ({ open, onOpenChange, onSuccess, onCreateUser, onUpdateUs
   const buildBody = (): Record<string, unknown> => {
     const body: Record<string, unknown> = {
       full_name: formData.full_name.trim(),
-      phone: formData.phone.trim(),
+      phone: normalizePhone(formData.phone),
       referral_source: formData.referral_source,
     }
 
@@ -224,6 +227,7 @@ const AddUserDialog = ({ open, onOpenChange, onSuccess, onCreateUser, onUpdateUs
       if (isEditMode) {
         await onUpdateUser(editingUser!.id, body)
         onOpenChange(false)
+        setConfirmEditOpen(false)
         onSuccess()
         toast.success("Client updated successfully")
       } else {
@@ -232,7 +236,7 @@ const AddUserDialog = ({ open, onOpenChange, onSuccess, onCreateUser, onUpdateUs
         onSuccess()
         setSuccessData({
           email: formData.email.trim(),
-          phone: formData.phone.trim(),
+          phone: normalizePhone(formData.phone),
           tempPassword: result.tempPassword,
         })
       }
@@ -505,13 +509,28 @@ const AddUserDialog = ({ open, onOpenChange, onSuccess, onCreateUser, onUpdateUs
             <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
               {t("common.cancel")}
             </Button>
-            <Button onClick={handleSubmit} disabled={submitting || !isFormValid}>
+            <Button
+              onClick={isEditMode ? () => setConfirmEditOpen(true) : handleSubmit}
+              disabled={submitting || !isFormValid}
+            >
               {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {isEditMode ? t("common.save") : t("common.create")}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Save confirmation — only edit mode (create flow already gates with a separate success dialog) */}
+      {isEditMode && (
+        <ConfirmDialog
+          open={confirmEditOpen}
+          onOpenChange={setConfirmEditOpen}
+          title={t("common.confirmSaveTitle")}
+          description={t("common.confirmSaveDescription")}
+          loading={submitting}
+          onConfirm={handleSubmit}
+        />
+      )}
 
       {/* Temp password success dialog — create mode only */}
       {successData && (

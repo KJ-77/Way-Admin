@@ -17,7 +17,7 @@
 // ============================================================================
 
 import { describe, it, expect } from "vitest"
-import { cn } from "../utils"
+import { cn, normalizePhone } from "../utils"
 
 describe("cn", () => {
   it("merges multiple class strings together", () => {
@@ -47,5 +47,34 @@ describe("cn", () => {
   it("returns empty string when given no arguments", () => {
     const result = cn()
     expect(result).toBe("")
+  })
+})
+
+// ============================================================================
+// normalizePhone — strips whitespace so the value sent to the API is canonical
+// regardless of how it was typed. Backs the UNIQUE(phone) DB constraint.
+// ============================================================================
+
+describe("normalizePhone", () => {
+  it("strips spaces from a typical Lebanese number", () => {
+    expect(normalizePhone("+961 70 779 950")).toBe("+96170779950")
+  })
+
+  it("strips tabs, newlines, and any other whitespace", () => {
+    expect(normalizePhone("+961\t70\n779 950")).toBe("+96170779950")
+  })
+
+  it("returns an already-clean number unchanged", () => {
+    expect(normalizePhone("+96170779950")).toBe("+96170779950")
+  })
+
+  it("handles an empty string", () => {
+    expect(normalizePhone("")).toBe("")
+  })
+
+  it("preserves the leading + and digits — only whitespace is removed", () => {
+    // dashes, parens, dots are intentionally preserved (E.164 still parses them upstream
+    // at Cognito layer); we only kill whitespace because that's what caused the bug
+    expect(normalizePhone(" +961-70-779-950 ")).toBe("+961-70-779-950")
   })
 })

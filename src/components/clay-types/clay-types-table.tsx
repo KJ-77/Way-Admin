@@ -16,6 +16,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useClayTypes, type ClayType } from "@/hooks/use-clay-types"
+import ConfirmDialog from "@/components/ui/confirm-dialog"
 
 const ClayTypesTable = () => {
   const { t } = useTranslation()
@@ -30,6 +31,7 @@ const ClayTypesTable = () => {
   // Delete confirmation
   const [deleteTarget, setDeleteTarget] = useState<ClayType | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [confirmEditOpen, setConfirmEditOpen] = useState(false)
 
   const openCreate = () => {
     setEditingName(null)
@@ -56,6 +58,7 @@ const ClayTypesTable = () => {
         toast.success(t("clayTypes.createSuccess"))
       }
       setIsFormOpen(false)
+      setConfirmEditOpen(false)
       refetch()
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t("clayTypes.operationFailed"))
@@ -190,13 +193,25 @@ const ClayTypesTable = () => {
             <Button variant="outline" onClick={() => setIsFormOpen(false)} disabled={saving}>
               {t("common.cancel")}
             </Button>
-            <Button onClick={handleSave} disabled={saving || !formName.trim()}>
+            <Button
+              onClick={editingName ? () => setConfirmEditOpen(true) : handleSave}
+              disabled={saving || !formName.trim()}
+            >
               {saving && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
               {editingName ? t("common.save") : t("common.create")}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={confirmEditOpen}
+        onOpenChange={setConfirmEditOpen}
+        title={t("common.confirmSaveTitle")}
+        description={t("common.confirmSaveDescription")}
+        loading={saving}
+        onConfirm={handleSave}
+      />
 
       {/* ── Delete Confirmation Dialog ── */}
       <Dialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
