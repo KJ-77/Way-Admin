@@ -26,6 +26,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
 import { apiFetch } from "@/lib/api"
+import { throwIfNotOk, friendlyError } from "@/lib/errors"
 import UserCombobox from "@/components/ui/user-combobox"
 import ConfirmDialog from "@/components/ui/confirm-dialog"
 import type { UserPackage, User, Package, PackageStatus, Attendance } from "@/types"
@@ -152,7 +153,7 @@ const SubscriptionsTable = ({
       setIsCreateOpen(false)
       onRefetch()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : t("subscriptions.operationFailed"))
+      toast.error(friendlyError(err, "subscriptions.operationFailed"))
     } finally {
       setSaving(false)
     }
@@ -171,7 +172,7 @@ const SubscriptionsTable = ({
       setConfirmEditOpen(false)
       onRefetch()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : t("subscriptions.operationFailed"))
+      toast.error(friendlyError(err, "subscriptions.operationFailed"))
     } finally {
       setSaving(false)
     }
@@ -187,7 +188,7 @@ const SubscriptionsTable = ({
       setDeleteTarget(null)
       onRefetch()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : t("subscriptions.deleteFailed"))
+      toast.error(friendlyError(err, "subscriptions.deleteFailed"))
     } finally {
       setDeleting(false)
     }
@@ -206,15 +207,12 @@ const SubscriptionsTable = ({
           notes: sessionNotes || undefined,
         }),
       })
-      if (!res.ok) {
-        const err = await res.json().catch(() => null)
-        throw new Error(err?.error || err?.message || `Failed: ${res.status}`)
-      }
+      await throwIfNotOk(res, "Failed to create session")
       toast.success(t("subscriptions.sessionCreateSuccess"))
       setIsSessionOpen(false)
       onRefetch() // refresh subscription data (remaining sessions/weight changes)
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : t("subscriptions.operationFailed"))
+      toast.error(friendlyError(err, "subscriptions.operationFailed"))
     } finally {
       setSavingSession(false)
     }

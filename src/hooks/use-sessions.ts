@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react"
 import { apiFetch } from "@/lib/api"
+import { throwIfNotOk } from "@/lib/errors"
 import type { Session } from "@/types"
 
 export function useSessions() {
@@ -12,7 +13,7 @@ export function useSessions() {
       setLoading(true)
       setError(null)
       const response = await apiFetch("/sessions")
-      if (!response.ok) throw new Error(`Failed to fetch sessions: ${response.status}`)
+      await throwIfNotOk(response, "Failed to fetch sessions")
       const data = await response.json()
       setSessions(data)
     } catch (err) {
@@ -31,10 +32,7 @@ export function useSessions() {
       method: "POST",
       body: JSON.stringify(body),
     })
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => null)
-      throw new Error(errorData?.error || errorData?.message || `Failed to create session: ${response.status}`)
-    }
+    await throwIfNotOk(response, "Failed to create session")
     return response.json()
   }
 
@@ -43,19 +41,13 @@ export function useSessions() {
       method: "PUT",
       body: JSON.stringify(body),
     })
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => null)
-      throw new Error(errorData?.error || errorData?.message || `Failed to update session: ${response.status}`)
-    }
+    await throwIfNotOk(response, "Failed to update session")
     return response.json()
   }
 
   const deleteSession = async (id: number): Promise<void> => {
     const response = await apiFetch(`/sessions/${id}`, { method: "DELETE" })
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => null)
-      throw new Error(errorData?.error || errorData?.message || `Failed to delete session: ${response.status}`)
-    }
+    await throwIfNotOk(response, "Failed to delete session")
   }
 
   return {

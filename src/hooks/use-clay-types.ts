@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react"
 import { apiFetch } from "@/lib/api"
+import { throwIfNotOk } from "@/lib/errors"
 
 export interface ClayType {
   name: string
@@ -16,7 +17,7 @@ export function useClayTypes() {
       setLoading(true)
       setError(null)
       const response = await apiFetch("/clay-types")
-      if (!response.ok) throw new Error(`Failed to fetch clay types: ${response.status}`)
+      await throwIfNotOk(response, "Failed to fetch clay types")
       setClayTypes(await response.json())
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch clay types")
@@ -34,10 +35,7 @@ export function useClayTypes() {
       method: "POST",
       body: JSON.stringify({ name }),
     })
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => null)
-      throw new Error(errorData?.error || errorData?.message || `Failed to create clay type: ${response.status}`)
-    }
+    await throwIfNotOk(response, "Failed to create clay type")
     return response.json()
   }
 
@@ -48,19 +46,13 @@ export function useClayTypes() {
       method: "PUT",
       body: JSON.stringify({ name: newName }),
     })
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => null)
-      throw new Error(errorData?.error || errorData?.message || `Failed to rename clay type: ${response.status}`)
-    }
+    await throwIfNotOk(response, "Failed to rename clay type")
     return response.json()
   }
 
   const deleteClayType = async (name: string): Promise<void> => {
     const response = await apiFetch(`/clay-types/${encodeURIComponent(name)}`, { method: "DELETE" })
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => null)
-      throw new Error(errorData?.error || errorData?.message || `Failed to delete clay type: ${response.status}`)
-    }
+    await throwIfNotOk(response, "Failed to delete clay type")
   }
 
   return { clayTypes, loading, error, refetch: fetchClayTypes, createClayType, renameClayType, deleteClayType }

@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next"
 import { format } from "date-fns"
 import { toast } from "sonner"
 import {
-  ArrowLeft, Mail, Phone, Calendar, MapPin, AlertTriangle, Loader2, RotateCcw,
+  ArrowLeft, Mail, Phone, Calendar, AlertTriangle, Loader2, RotateCcw,
 } from "lucide-react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import ConfirmDialog from "@/components/ui/confirm-dialog"
 import { apiFetch } from "@/lib/api"
+import { throwIfNotOk, friendlyError } from "@/lib/errors"
 import type { User } from "@/types"
 
 const statusColors: Record<string, string> = {
@@ -53,15 +54,12 @@ const UserProfileHeader = ({ user, onUserUpdated, children }: UserProfileHeaderP
     setRestoring(true)
     try {
       const res = await apiFetch(`/users/${user.id}/restore`, { method: "POST" })
-      if (!res.ok) {
-        const err = await res.json().catch(() => null)
-        throw new Error(err?.message || err?.error || `Failed: ${res.status}`)
-      }
+      await throwIfNotOk(res, "Failed to restore client")
       toast.success(t("users.restoreSuccess", "Client restored"))
       setConfirmRestoreOpen(false)
       onUserUpdated?.()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : t("users.restoreFailed", "Failed to restore client"))
+      toast.error(friendlyError(err, "users.restoreFailed"))
     } finally {
       setRestoring(false)
     }
@@ -124,12 +122,6 @@ const UserProfileHeader = ({ user, onUserUpdated, children }: UserProfileHeaderP
                 <Phone className="h-3.5 w-3.5" />
                 {user.phone}
               </span>
-              {user.section && (
-                <span className="flex items-center gap-1.5">
-                  <MapPin className="h-3.5 w-3.5" />
-                  {user.section} Section
-                </span>
-              )}
               {memberSince && (
                 <span className="flex items-center gap-1.5">
                   <Calendar className="h-3.5 w-3.5" />

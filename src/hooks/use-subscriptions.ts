@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react"
 import { apiFetch } from "@/lib/api"
+import { throwIfNotOk } from "@/lib/errors"
 import type { UserPackage } from "@/types"
 
 // Lightweight hook for a single user's subscriptions (used on user detail page + session create dialog)
@@ -38,7 +39,7 @@ export function useSubscriptions() {
       setLoading(true)
       setError(null)
       const response = await apiFetch("/user-packages")
-      if (!response.ok) throw new Error(`Failed to fetch subscriptions: ${response.status}`)
+      await throwIfNotOk(response, "Failed to fetch subscriptions")
       const data = await response.json()
       setSubscriptions(data)
     } catch (err) {
@@ -57,10 +58,7 @@ export function useSubscriptions() {
       method: "POST",
       body: JSON.stringify(body),
     })
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => null)
-      throw new Error(errorData?.message || errorData?.error || `Failed to create subscription: ${response.status}`)
-    }
+    await throwIfNotOk(response, "Failed to create subscription")
     return response.json()
   }
 
@@ -69,19 +67,13 @@ export function useSubscriptions() {
       method: "PUT",
       body: JSON.stringify(body),
     })
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => null)
-      throw new Error(errorData?.message || errorData?.error || `Failed to update subscription: ${response.status}`)
-    }
+    await throwIfNotOk(response, "Failed to update subscription")
     return response.json()
   }
 
   const deleteSubscription = async (id: number): Promise<void> => {
     const response = await apiFetch(`/user-packages/${id}`, { method: "DELETE" })
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => null)
-      throw new Error(errorData?.message || errorData?.error || `Failed to delete subscription: ${response.status}`)
-    }
+    await throwIfNotOk(response, "Failed to delete subscription")
   }
 
   return {

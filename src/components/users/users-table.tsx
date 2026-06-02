@@ -25,7 +25,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import AddUserDialog from "@/components/users/add-user-dialog"
-import type { User, Tutor, UserStatus, Level, Section } from "@/types"
+import { friendlyError } from "@/lib/errors"
+import type { User, Tutor, UserStatus, Level } from "@/types"
 import type { CreateUserResponse } from "@/hooks/use-users"
 
 interface UsersTableProps {
@@ -70,7 +71,6 @@ const UsersTable = ({
   const [isAddOpen, setIsAddOpen] = useState(false)
   const [statusFilter, setStatusFilter] = useState<UserStatus | "all">("all")
   const [levelFilter, setLevelFilter] = useState<Level | "all">("all")
-  const [sectionFilter, setSectionFilter] = useState<Section | "all">("all")
 
   // Edit mode — when set, the AddUserDialog opens in edit mode
   const [editTarget, setEditTarget] = useState<User | null>(null)
@@ -85,8 +85,7 @@ const UsersTable = ({
       user.phone.includes(search)
     const matchesStatus = statusFilter === "all" || user.status === statusFilter
     const matchesLevel = levelFilter === "all" || user.level === levelFilter
-    const matchesSection = sectionFilter === "all" || user.section === sectionFilter
-    return matchesSearch && matchesStatus && matchesLevel && matchesSection
+    return matchesSearch && matchesStatus && matchesLevel
   })
 
   const openEdit = (user: User) => {
@@ -110,7 +109,7 @@ const UsersTable = ({
       onRefetch()
       toast.success("Client deleted successfully")
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to delete client")
+      toast.error(friendlyError(err, "users.deleteFailed"))
     } finally {
       setDeleting(false)
     }
@@ -165,16 +164,6 @@ const UsersTable = ({
                 <SelectItem value="Advanced">Advanced</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={sectionFilter} onValueChange={(v) => setSectionFilter(v as Section | "all")}>
-              <SelectTrigger className="w-[130px]">
-                <SelectValue placeholder={t("users.allSections")} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t("users.allSections")}</SelectItem>
-                <SelectItem value="Studio">Studio</SelectItem>
-                <SelectItem value="PC">PC</SelectItem>
-              </SelectContent>
-            </Select>
             {/* Toggle to surface soft-deleted clients alongside active ones */}
             <div className="flex items-center gap-2 px-2">
               <Switch id="show-deleted" checked={showDeleted} onCheckedChange={onShowDeletedChange} />
@@ -203,7 +192,6 @@ const UsersTable = ({
                   <TableRow>
                     <TableHead>{t("users.name")}</TableHead>
                     <TableHead className="hidden md:table-cell">{t("users.email")}</TableHead>
-                    <TableHead className="hidden sm:table-cell">{t("users.section")}</TableHead>
                     <TableHead>{t("users.level")}</TableHead>
                     <TableHead className="hidden lg:table-cell">{t("users.loyalty")}</TableHead>
                     <TableHead>{t("users.status")}</TableHead>
@@ -214,7 +202,7 @@ const UsersTable = ({
                 <TableBody>
                   {filteredUsers.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
+                      <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
                         {t("common.noResults")}
                       </TableCell>
                     </TableRow>
@@ -247,9 +235,6 @@ const UsersTable = ({
                         </TableCell>
                         <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
                           {user.email || "—"}
-                        </TableCell>
-                        <TableCell className="hidden sm:table-cell">
-                          <span className="text-sm">{user.section || "—"}</span>
                         </TableCell>
                         <TableCell>
                           {user.level ? (

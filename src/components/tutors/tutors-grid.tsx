@@ -20,6 +20,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select"
 import { normalizePhone } from "@/lib/utils"
+import { friendlyError } from "@/lib/errors"
 import ConfirmDialog from "@/components/ui/confirm-dialog"
 import type { Tutor, TutorSpecialty } from "@/types"
 
@@ -120,7 +121,7 @@ const TutorsGrid = ({
       setConfirmEditOpen(false)
       onRefetch()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : t("tutors.operationFailed"))
+      toast.error(friendlyError(err, "tutors.operationFailed"))
     } finally {
       setSaving(false)
     }
@@ -135,7 +136,7 @@ const TutorsGrid = ({
       setDeleteTarget(null)
       onRefetch()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : t("tutors.deleteFailed"))
+      toast.error(friendlyError(err, "tutors.deleteFailed"))
     } finally {
       setDeleting(false)
     }

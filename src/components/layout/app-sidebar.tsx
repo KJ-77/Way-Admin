@@ -46,8 +46,6 @@ const AppSidebar = () => {
   const { user, logout } = useAuth()
 
   const isAdmin = user?.groups.includes("admin")
-  // Both admins + studio-managers can manage clay types (per spec).
-  const canManageClayTypes = !!user?.groups.some((g) => g === "admin" || g === "studio-manager")
 
   const handleLogout = () => {
     logout()
@@ -119,13 +117,15 @@ const AppSidebar = () => {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-xs uppercase tracking-wider text-muted-foreground/60">
-            System
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {canManageClayTypes && (
+        {/* System group — admin-only. Hidden entirely for studio managers to avoid
+            rendering an empty group label. */}
+        {isAdmin && (
+          <SidebarGroup>
+            <SidebarGroupLabel className="text-xs uppercase tracking-wider text-muted-foreground/60">
+              System
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     asChild
@@ -139,8 +139,6 @@ const AppSidebar = () => {
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-              )}
-              {isAdmin && (
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     asChild
@@ -154,10 +152,10 @@ const AppSidebar = () => {
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-              )}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
 
       <SidebarFooter className="p-2">

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react"
 import { apiFetch } from "@/lib/api"
+import { throwIfNotOk } from "@/lib/errors"
 import type { ScheduleSlot, ScheduleWeekResponse, UpsertOverridePayload } from "@/types"
 
 // ── Beirut week-start utility (frontend copy) ──
@@ -46,7 +47,7 @@ export function useSchedule(initialWeek?: string) {
       setLoading(true)
       setError(null)
       const response = await apiFetch(`/schedule?week=${week}`)
-      if (!response.ok) throw new Error(`Failed to fetch schedule: ${response.status}`)
+      await throwIfNotOk(response, "Failed to fetch schedule")
       const data: ScheduleWeekResponse = await response.json()
       setSlots(data.slots)
     } catch (err) {
@@ -71,29 +72,20 @@ export function useSchedule(initialWeek?: string) {
   // ── Template-level CRUD ──
   const createSlot = async (body: Record<string, unknown>): Promise<ScheduleSlot> => {
     const response = await apiFetch("/schedule", { method: "POST", body: JSON.stringify(body) })
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => null)
-      throw new Error(errorData?.message || errorData?.error || `Failed to create slot: ${response.status}`)
-    }
+    await throwIfNotOk(response, "Failed to create slot")
     return response.json()
   }
 
   const updateSlot = async (id: number, body: Record<string, unknown>): Promise<ScheduleSlot> => {
     const response = await apiFetch(`/schedule/${id}`, { method: "PUT", body: JSON.stringify(body) })
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => null)
-      throw new Error(errorData?.message || errorData?.error || `Failed to update slot: ${response.status}`)
-    }
+    await throwIfNotOk(response, "Failed to update slot")
     return response.json()
   }
 
   // Soft-delete on the backend; the slot row sticks around for audit.
   const deleteSlot = async (id: number): Promise<void> => {
     const response = await apiFetch(`/schedule/${id}`, { method: "DELETE" })
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => null)
-      throw new Error(errorData?.message || errorData?.error || `Failed to delete slot: ${response.status}`)
-    }
+    await throwIfNotOk(response, "Failed to delete slot")
   }
 
   // ── Override (per-week exception) mutations ──
@@ -102,19 +94,14 @@ export function useSchedule(initialWeek?: string) {
       method: "PUT",
       body: JSON.stringify(payload),
     })
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => null)
-      throw new Error(errorData?.message || errorData?.error || `Failed to update override: ${response.status}`)
-    }
+    await throwIfNotOk(response, "Failed to update override")
   }
 
   const clearOverride = async (slotId: number, week: string): Promise<void> => {
     const response = await apiFetch(`/schedule/${slotId}/override?week=${week}`, { method: "DELETE" })
     // 404 = no override existed → treat as success (idempotent clear)
-    if (!response.ok && response.status !== 404) {
-      const errorData = await response.json().catch(() => null)
-      throw new Error(errorData?.message || errorData?.error || `Failed to clear override: ${response.status}`)
-    }
+    if (response.status === 404) return
+    await throwIfNotOk(response, "Failed to clear override")
   }
 
   return {

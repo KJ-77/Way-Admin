@@ -38,6 +38,7 @@ import {
 } from "@/components/ui/select"
 import { useAccounts, type DbSyncError } from "@/hooks/use-accounts"
 import { normalizePhone } from "@/lib/utils"
+import { friendlyError } from "@/lib/errors"
 import ConfirmDialog from "@/components/ui/confirm-dialog"
 import type { AdminAccount, AccountRole } from "@/types"
 
@@ -125,7 +126,7 @@ const AccountsTable = () => {
       setTempPassword(result.tempPassword)
       toast.success(t("accounts.resetPasswordSuccess"))
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : t("accounts.resetPasswordFailed"))
+      toast.error(friendlyError(err, "accounts.resetPasswordFailed"))
     } finally {
       setResettingPassword(false)
     }
@@ -168,7 +169,7 @@ const AccountsTable = () => {
         setIsFormOpen(false)
         setIsSyncDialogOpen(true)
       } else {
-        toast.error(err instanceof Error ? err.message : t("accounts.operationFailed"))
+        toast.error(friendlyError(err, "accounts.operationFailed"))
       }
     } finally {
       setSaving(false)
@@ -185,7 +186,7 @@ const AccountsTable = () => {
       setUnsyncedAccount(null)
       refetch()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : t("accounts.syncFailed"))
+      toast.error(friendlyError(err, "accounts.syncFailed"))
     } finally {
       setSyncing(false)
     }
@@ -201,7 +202,7 @@ const AccountsTable = () => {
       refetch()
       toast.success(t("accounts.deleteSuccess"))
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : t("accounts.deleteFailed"))
+      toast.error(friendlyError(err, "accounts.deleteFailed"))
     } finally {
       setDeleting(false)
     }

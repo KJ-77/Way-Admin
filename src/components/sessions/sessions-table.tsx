@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/dialog"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { apiFetch } from "@/lib/api"
+import { friendlyError } from "@/lib/errors"
 import UserCombobox from "@/components/ui/user-combobox"
 import ConfirmDialog from "@/components/ui/confirm-dialog"
 import type { Session, User, UserPackage, Attendance } from "@/types"
@@ -198,7 +199,7 @@ const SessionsTable = ({
       setIsCreateOpen(false)
       onRefetch()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : t("sessions.operationFailed"))
+      toast.error(friendlyError(err, "sessions.operationFailed"))
     } finally {
       setSaving(false)
     }
@@ -218,7 +219,7 @@ const SessionsTable = ({
       setConfirmEditOpen(false)
       onRefetch()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : t("sessions.operationFailed"))
+      toast.error(friendlyError(err, "sessions.operationFailed"))
     } finally {
       setSaving(false)
     }
@@ -234,7 +235,7 @@ const SessionsTable = ({
       setDeleteTarget(null)
       onRefetch()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : t("sessions.deleteFailed"))
+      toast.error(friendlyError(err, "sessions.deleteFailed"))
     } finally {
       setDeleting(false)
     }

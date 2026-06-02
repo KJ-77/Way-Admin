@@ -1,6 +1,6 @@
-import type { User, UserPackage, ActivityItem } from "@/types"
+﻿import type { User, UserPackage, ActivityItem } from "@/types"
 
-// Mock session shape — kept for dashboard placeholders until real API integration
+// Mock session shape â€” kept for dashboard placeholders until real API integration
 interface MockSession {
   id: number
   date: string
@@ -17,75 +17,75 @@ interface MockSession {
 
 export const users: User[] = [
   {
-    id: "mock-1", full_name: "Sara Mansour", gender: "Female", dob: "1998-05-15T00:00:00.000Z", level: "Mid",
+    id: "mock-1", is_active: true, full_name: "Sara Mansour", gender: "Female", dob: "1998-05-15T00:00:00.000Z", level: "Mid",
     preferred_tutor: 1, loyalty: "High", phone: "+961 70 111 222", email: "sara.m@gmail.com",
-    first_visit: "2024-03-15T00:00:00.000Z", referral_source: "SCM", status: "Active", section: "Studio",
+    first_visit: "2024-03-15T00:00:00.000Z", referral_source: "SCM", status: "Active",
     notes: "Very talented, interested in advanced glazing techniques", created_at: "2024-03-15T10:00:00.000Z", updated_at: "2024-03-15T10:00:00.000Z"
   },
   {
-    id: "mock-2", full_name: "Ahmad Bazzi", gender: "Male", dob: "1991-03-22T00:00:00.000Z", level: "Beginner",
+    id: "mock-2", is_active: true, full_name: "Ahmad Bazzi", gender: "Male", dob: "1991-03-22T00:00:00.000Z", level: "Beginner",
     preferred_tutor: 2, loyalty: "Low", phone: "+961 70 222 333", email: "ahmad.b@gmail.com",
-    first_visit: "2025-01-10T00:00:00.000Z", referral_source: "Referral", status: "Active", section: "PC",
+    first_visit: "2025-01-10T00:00:00.000Z", referral_source: "Referral", status: "Active",
     notes: "First time working with glass", created_at: "2025-01-10T10:00:00.000Z", updated_at: "2025-01-10T10:00:00.000Z"
   },
   {
-    id: "mock-3", full_name: "Mia Chamoun", gender: "Female", dob: "2004-09-10T00:00:00.000Z", level: "Advanced",
+    id: "mock-3", is_active: true, full_name: "Mia Chamoun", gender: "Female", dob: "2004-09-10T00:00:00.000Z", level: "Advanced",
     preferred_tutor: 1, loyalty: "High", phone: "+961 70 333 444", email: "mia.c@gmail.com",
-    first_visit: "2023-06-20T00:00:00.000Z", referral_source: "SCM", status: "Active", section: "Studio",
+    first_visit: "2023-06-20T00:00:00.000Z", referral_source: "SCM", status: "Active",
     notes: "Professional artist, teaches occasionally", created_at: "2023-06-20T10:00:00.000Z", updated_at: "2023-06-20T10:00:00.000Z"
   },
   {
-    id: "mock-4", full_name: "Karim Nassar", gender: "Male", dob: "1984-01-15T00:00:00.000Z", level: "Mid",
+    id: "mock-4", is_active: true, full_name: "Karim Nassar", gender: "Male", dob: "1984-01-15T00:00:00.000Z", level: "Mid",
     preferred_tutor: 3, loyalty: "Mid", phone: "+961 70 444 555", email: "karim.n@gmail.com",
-    first_visit: "2024-07-01T00:00:00.000Z", referral_source: "Walk-In", status: "Active", section: "Studio",
+    first_visit: "2024-07-01T00:00:00.000Z", referral_source: "Walk-In", status: "Active",
     notes: "", created_at: "2024-07-01T10:00:00.000Z", updated_at: "2024-07-01T10:00:00.000Z"
   },
   {
-    id: "mock-5", full_name: "Lina Harb", gender: "Female", dob: "1995-07-20T00:00:00.000Z", level: "Beginner",
+    id: "mock-5", is_active: true, full_name: "Lina Harb", gender: "Female", dob: "1995-07-20T00:00:00.000Z", level: "Beginner",
     preferred_tutor: 4, loyalty: "Low", phone: "+961 70 555 666", email: "lina.h@gmail.com",
-    first_visit: "2025-02-14T00:00:00.000Z", referral_source: "SCM", status: "Active", section: "PC",
+    first_visit: "2025-02-14T00:00:00.000Z", referral_source: "SCM", status: "Active",
     notes: "Wants to try different art forms", created_at: "2025-02-14T10:00:00.000Z", updated_at: "2025-02-14T10:00:00.000Z"
   },
   {
-    id: "mock-6", full_name: "Tarek Sleiman", gender: "Male", dob: "1997-11-08T00:00:00.000Z", level: "Mid",
+    id: "mock-6", is_active: true, full_name: "Tarek Sleiman", gender: "Male", dob: "1997-11-08T00:00:00.000Z", level: "Mid",
     preferred_tutor: 2, loyalty: "Mid", phone: "+961 70 666 777", email: "tarek.s@gmail.com",
-    first_visit: "2024-09-05T00:00:00.000Z", referral_source: "Referral", status: "Active", section: "PC",
+    first_visit: "2024-09-05T00:00:00.000Z", referral_source: "Referral", status: "Active",
     notes: "Making stained glass pieces", created_at: "2024-09-05T10:00:00.000Z", updated_at: "2024-09-05T10:00:00.000Z"
   },
   {
-    id: "mock-7", full_name: "Yasmine Azar", gender: "Female", dob: "2000-04-25T00:00:00.000Z", level: "Advanced",
+    id: "mock-7", is_active: true, full_name: "Yasmine Azar", gender: "Female", dob: "2000-04-25T00:00:00.000Z", level: "Advanced",
     preferred_tutor: 3, loyalty: "High", phone: "+961 70 777 888", email: "yasmine.a@gmail.com",
-    first_visit: "2023-11-12T00:00:00.000Z", referral_source: "SCM", status: "Active", section: "Studio",
+    first_visit: "2023-11-12T00:00:00.000Z", referral_source: "SCM", status: "Active",
     notes: "Specializes in wheel throwing", created_at: "2023-11-12T10:00:00.000Z", updated_at: "2023-11-12T10:00:00.000Z"
   },
   {
-    id: "mock-8", full_name: "Rami Khoury", gender: "Male", dob: "1988-02-14T00:00:00.000Z", level: "Beginner",
+    id: "mock-8", is_active: true, full_name: "Rami Khoury", gender: "Male", dob: "1988-02-14T00:00:00.000Z", level: "Beginner",
     preferred_tutor: 1, loyalty: "Low", phone: "+961 70 888 999", email: "rami.k@gmail.com",
-    first_visit: "2025-03-01T00:00:00.000Z", referral_source: "Walk-In", status: "Active", section: "Studio",
+    first_visit: "2025-03-01T00:00:00.000Z", referral_source: "Walk-In", status: "Active",
     notes: "Interested in oil painting", created_at: "2025-03-01T10:00:00.000Z", updated_at: "2025-03-01T10:00:00.000Z"
   },
   {
-    id: "mock-9", full_name: "Dina Frem", gender: "Female", dob: "1981-08-30T00:00:00.000Z", level: "Mid",
+    id: "mock-9", is_active: true, full_name: "Dina Frem", gender: "Female", dob: "1981-08-30T00:00:00.000Z", level: "Mid",
     preferred_tutor: 4, loyalty: "Mid", phone: "+961 70 999 000", email: "dina.f@gmail.com",
-    first_visit: "2024-05-22T00:00:00.000Z", referral_source: "Referral", status: "Dormant", section: "PC",
+    first_visit: "2024-05-22T00:00:00.000Z", referral_source: "Referral", status: "Dormant",
     notes: "On pause due to travel", created_at: "2024-05-22T10:00:00.000Z", updated_at: "2024-05-22T10:00:00.000Z"
   },
   {
-    id: "mock-10", full_name: "Jad Makarem", gender: "Male", dob: "1993-06-12T00:00:00.000Z", level: "Advanced",
+    id: "mock-10", is_active: true, full_name: "Jad Makarem", gender: "Male", dob: "1993-06-12T00:00:00.000Z", level: "Advanced",
     preferred_tutor: 2, loyalty: "High", phone: "+961 70 123 456", email: "jad.m@gmail.com",
-    first_visit: "2023-08-30T00:00:00.000Z", referral_source: "SCM", status: "Active", section: "Studio",
+    first_visit: "2023-08-30T00:00:00.000Z", referral_source: "SCM", status: "Active",
     notes: "Working on a personal collection", created_at: "2023-08-30T10:00:00.000Z", updated_at: "2023-08-30T10:00:00.000Z"
   },
   {
-    id: "mock-11", full_name: "Nour El Hajj", gender: "Female", dob: "2002-12-01T00:00:00.000Z", level: "Beginner",
+    id: "mock-11", is_active: true, full_name: "Nour El Hajj", gender: "Female", dob: "2002-12-01T00:00:00.000Z", level: "Beginner",
     preferred_tutor: 3, loyalty: "Low", phone: "+961 70 234 567", email: "nour.h@gmail.com",
-    first_visit: "2025-02-28T00:00:00.000Z", referral_source: "Referral", status: "Active", section: "PC",
+    first_visit: "2025-02-28T00:00:00.000Z", referral_source: "Referral", status: "Active",
     notes: "Birthday gift experience", created_at: "2025-02-28T10:00:00.000Z", updated_at: "2025-02-28T10:00:00.000Z"
   },
   {
-    id: "mock-12", full_name: "Ziad Naim", gender: "Male", dob: "1976-03-18T00:00:00.000Z", level: "Mid",
+    id: "mock-12", is_active: true, full_name: "Ziad Naim", gender: "Male", dob: "1976-03-18T00:00:00.000Z", level: "Mid",
     preferred_tutor: 1, loyalty: "Mid", phone: "+961 70 345 678", email: "ziad.n@gmail.com",
-    first_visit: "2024-01-15T00:00:00.000Z", referral_source: "Walk-In", status: "Active", section: "Studio",
+    first_visit: "2024-01-15T00:00:00.000Z", referral_source: "Walk-In", status: "Active",
     notes: "Retired, comes every week", created_at: "2024-01-15T10:00:00.000Z", updated_at: "2024-01-15T10:00:00.000Z"
   },
 ]

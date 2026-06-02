@@ -3,7 +3,6 @@ export type Level = "Beginner" | "Mid" | "Advanced"
 export type Loyalty = "Low" | "Mid" | "High"
 export type ReferralSource = "Referral" | "SCM" | "Walk-In"
 export type UserStatus = "Active" | "Dormant"
-export type Section = "Studio" | "PC"
 export type PackageStatus = "active" | "expired" | "depleted"
 export type ClassType = "pottery" | "glass" | "canvas" | "mixed-media"
 export type Attendance = "attended" | "booked" | "cancelled" | "cancelled - no charge"
@@ -33,7 +32,6 @@ export interface User {
   email?: string
   first_visit?: string
   status?: UserStatus
-  section?: Section
   notes?: string
   // Soft-delete flag. Inactive clients are hidden from the default clients list
   // (toggle "show deleted" to reveal them). Their Cognito login is disabled.

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react"
 import { apiFetch } from "@/lib/api"
+import { throwIfNotOk } from "@/lib/errors"
 import type { Package } from "@/types"
 
 export function usePackages() {
@@ -12,7 +13,7 @@ export function usePackages() {
       setLoading(true)
       setError(null)
       const response = await apiFetch("/packages")
-      if (!response.ok) throw new Error(`Failed to fetch packages: ${response.status}`)
+      await throwIfNotOk(response, "Failed to fetch packages")
       const data = await response.json()
       setPackages(data)
     } catch (err) {
@@ -31,10 +32,7 @@ export function usePackages() {
       method: "POST",
       body: JSON.stringify(body),
     })
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => null)
-      throw new Error(errorData?.message || errorData?.error || `Failed to create package: ${response.status}`)
-    }
+    await throwIfNotOk(response, "Failed to create package")
     return response.json()
   }
 
@@ -43,19 +41,13 @@ export function usePackages() {
       method: "PUT",
       body: JSON.stringify(body),
     })
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => null)
-      throw new Error(errorData?.message || errorData?.error || `Failed to update package: ${response.status}`)
-    }
+    await throwIfNotOk(response, "Failed to update package")
     return response.json()
   }
 
   const deletePackage = async (id: number): Promise<void> => {
     const response = await apiFetch(`/packages/${id}`, { method: "DELETE" })
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => null)
-      throw new Error(errorData?.message || errorData?.error || `Failed to delete package: ${response.status}`)
-    }
+    await throwIfNotOk(response, "Failed to delete package")
   }
 
   return { packages, loading, error, refetch: fetchPackages, createPackage, updatePackage, deletePackage }

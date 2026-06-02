@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react"
 import { apiFetch } from "@/lib/api"
+import { throwIfNotOk } from "@/lib/errors"
 import type { Tutor } from "@/types"
 
 export function useTutors() {
@@ -12,7 +13,7 @@ export function useTutors() {
       setLoading(true)
       setError(null)
       const response = await apiFetch("/tutors")
-      if (!response.ok) throw new Error(`Failed to fetch tutors: ${response.status}`)
+      await throwIfNotOk(response, "Failed to fetch tutors")
       const data = await response.json()
       setTutors(data)
     } catch (err) {
@@ -31,10 +32,7 @@ export function useTutors() {
       method: "POST",
       body: JSON.stringify(body),
     })
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => null)
-      throw new Error(errorData?.error || errorData?.message || `Failed to create tutor: ${response.status}`)
-    }
+    await throwIfNotOk(response, "Failed to create tutor")
     return response.json()
   }
 
@@ -43,19 +41,13 @@ export function useTutors() {
       method: "PUT",
       body: JSON.stringify(body),
     })
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => null)
-      throw new Error(errorData?.error || errorData?.message || `Failed to update tutor: ${response.status}`)
-    }
+    await throwIfNotOk(response, "Failed to update tutor")
     return response.json()
   }
 
   const deleteTutor = async (id: number): Promise<void> => {
     const response = await apiFetch(`/tutors/${id}`, { method: "DELETE" })
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => null)
-      throw new Error(errorData?.error || errorData?.message || `Failed to delete tutor: ${response.status}`)
-    }
+    await throwIfNotOk(response, "Failed to delete tutor")
   }
 
   return { tutors, loading, error, refetch: fetchTutors, createTutor, updateTutor, deleteTutor }

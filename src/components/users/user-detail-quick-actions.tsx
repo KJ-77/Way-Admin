@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react"
 import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
-import { CalendarPlus, PackagePlus, Pencil, Loader2 } from "lucide-react"
+import { CalendarPlus, PackagePlus, Pencil, Loader2, KeyRound, Copy, Check, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -13,6 +13,7 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog"
 import { apiFetch } from "@/lib/api"
+import { throwIfNotOk, friendlyError } from "@/lib/errors"
 import AddUserDialog from "@/components/users/add-user-dialog"
 import type { User, UserPackage, Package } from "@/types"
 import type { CreateUserResponse } from "@/hooks/use-users"
@@ -49,17 +50,23 @@ const UserDetailQuickActions = ({
   // ── Edit user dialog state ──
   const [editOpen, setEditOpen] = useState(false)
 
+  // ── Reset-password dialog state — two-phase: confirm, then show temp password ──
+  const [resetOpen, setResetOpen] = useState(false)
+  const [resettingPassword, setResettingPassword] = useState(false)
+  const [tempPassword, setTempPassword] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
+
+  // ── Soft-delete dialog state — admin/studio-manager triggered ──
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+
   // Inline update handler — matches the signature AddUserDialog expects
   const handleUpdateUser = async (id: string, body: Record<string, unknown>): Promise<User> => {
     const response = await apiFetch(`/users/${id}`, {
       method: "PUT",
       body: JSON.stringify(body),
     })
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => null)
-      const errorMsg = errorData?.message || errorData?.error || `Failed to update client: ${response.status}`
-      throw new Error(errorMsg)
-    }
+    await throwIfNotOk(response, "Failed to update client")
     return response.json()
   }
 
@@ -99,15 +106,12 @@ const UserDetailQuickActions = ({
           notes: sessionForm.notes || undefined,
         }),
       })
-      if (!res.ok) {
-        const err = await res.json().catch(() => null)
-        throw new Error(err?.error || err?.message || "Failed to create session")
-      }
+      await throwIfNotOk(res, "Failed to create session")
       toast.success(t("sessions.createSuccess"))
       setSessionOpen(false)
       onSessionCreated()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : t("sessions.operationFailed"))
+      toast.error(friendlyError(err, "sessions.operationFailed"))
     } finally {
       setSessionSaving(false)
     }
@@ -124,21 +128,69 @@ const UserDetailQuickActions = ({
           notes: subscribeForm.notes || undefined,
         }),
       })
-      if (!res.ok) {
-        const err = await res.json().catch(() => null)
-        throw new Error(err?.error || err?.message || "Failed to create subscription")
-      }
+      await throwIfNotOk(res, "Failed to create subscription")
       toast.success(t("subscriptions.createSuccess"))
       setSubscribeOpen(false)
       onSubscriptionCreated()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : t("subscriptions.operationFailed"))
+      toast.error(friendlyError(err, "subscriptions.operationFailed"))
     } finally {
       setSubscribeSaving(false)
     }
   }
 
   const sessionValid = sessionForm.user_package_id && sessionForm.attendance
+
+  // Resets the client's Cognito password — backend returns a temp password we surface
+  // in the dialog so the admin can read/copy it.
+  const handleResetPassword = async () => {
+    setResettingPassword(true)
+    try {
+      const res = await apiFetch(`/users/${user.id}/reset-password`, { method: "POST" })
+      await throwIfNotOk(res, "Failed to reset password")
+      const data = await res.json() as { tempPassword: string }
+      setTempPassword(data.tempPassword)
+      toast.success(t("users.resetPasswordSuccess"))
+    } catch (err) {
+      toast.error(friendlyError(err, "users.resetPasswordFailed"))
+    } finally {
+      setResettingPassword(false)
+    }
+  }
+
+  const handleCopyTempPassword = async () => {
+    if (!tempPassword) return
+    await navigator.clipboard.writeText(tempPassword)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  // Wipe local state when dialog closes so reopening starts fresh
+  const handleResetDialogChange = (open: boolean) => {
+    setResetOpen(open)
+    if (!open) {
+      setTempPassword(null)
+      setCopied(false)
+    }
+  }
+
+  // Soft-delete the client — flips is_active=false and disables their Cognito login.
+  // Stays on the page; the profile header detects is_active=false on refetch and
+  // renders the Deleted banner with a Restore button (so a misclick is reversible).
+  const handleDelete = async () => {
+    setDeleting(true)
+    try {
+      const res = await apiFetch(`/users/${user.id}`, { method: "DELETE" })
+      await throwIfNotOk(res, "Failed to delete client")
+      toast.success("Client deleted successfully")
+      setDeleteOpen(false)
+      onUserUpdated()
+    } catch (err) {
+      toast.error(friendlyError(err, "users.deleteFailed"))
+    } finally {
+      setDeleting(false)
+    }
+  }
 
   return (
     <>
@@ -176,6 +228,27 @@ const UserDetailQuickActions = ({
         >
           <PackagePlus className="h-3.5 w-3.5" />
           {t("subscriptions.addSubscription")}
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-1.5"
+          onClick={() => handleResetDialogChange(true)}
+        >
+          <KeyRound className="h-3.5 w-3.5" />
+          {t("users.resetPassword")}
+        </Button>
+        {/* Delete is disabled once the client is already soft-deleted — the profile
+            header renders the Restore action in that state, so this button would be a no-op. */}
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-1.5 text-destructive hover:text-destructive"
+          onClick={() => setDeleteOpen(true)}
+          disabled={!user.is_active}
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+          {t("users.delete")}
         </Button>
       </div>
 
@@ -321,6 +394,80 @@ const UserDetailQuickActions = ({
         onUpdateUser={handleUpdateUser}
         editingUser={user}
       />
+
+      {/* ── Reset Password Dialog — two phases: confirm, then show temp password ── */}
+      <Dialog open={resetOpen} onOpenChange={handleResetDialogChange}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("users.resetPasswordConfirm")}</DialogTitle>
+            <DialogDescription>
+              {tempPassword ? t("users.resetPasswordDone") : t("users.resetPasswordWarning")}
+            </DialogDescription>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            {user.full_name} ({user.email || user.phone})
+          </p>
+          {tempPassword && (
+            <div className="rounded-md border bg-muted/50 p-3 space-y-2">
+              <p className="text-xs text-muted-foreground">{t("users.tempPasswordLabel")}</p>
+              <div className="flex items-center gap-2">
+                <code className="flex-1 rounded bg-background px-3 py-2 text-sm font-mono border">
+                  {tempPassword}
+                </code>
+                <Button variant="outline" size="icon" onClick={handleCopyTempPassword} className="shrink-0">
+                  {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">{t("users.tempPasswordHint")}</p>
+            </div>
+          )}
+          <DialogFooter>
+            {tempPassword ? (
+              <Button onClick={() => handleResetDialogChange(false)}>
+                {t("common.close")}
+              </Button>
+            ) : (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => handleResetDialogChange(false)}
+                  disabled={resettingPassword}
+                >
+                  {t("common.cancel")}
+                </Button>
+                <Button onClick={handleResetPassword} disabled={resettingPassword}>
+                  {resettingPassword && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {t("users.resetPassword")}
+                </Button>
+              </>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Delete Confirmation Dialog — same copy as the users-table delete flow ── */}
+      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("users.deleteConfirm", "Delete Client")}</DialogTitle>
+            <DialogDescription>
+              {t("users.deleteWarning", "This client will be hidden from the clients list and their login will be disabled. Their history (sessions, items, subscriptions) is preserved and the client can be restored later.")}
+            </DialogDescription>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            {user.full_name} ({user.email || user.phone})
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteOpen(false)} disabled={deleting}>
+              {t("common.cancel")}
+            </Button>
+            <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
+              {deleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {t("common.delete")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   )
 }

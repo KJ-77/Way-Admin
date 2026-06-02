@@ -17,6 +17,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import ConfirmDialog from "@/components/ui/confirm-dialog"
+import { friendlyError } from "@/lib/errors"
 import type { Package } from "@/types"
 
 interface PackagesTableProps {
@@ -100,7 +101,7 @@ const PackagesTable = ({
       setConfirmEditOpen(false)
       onRefetch()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : t("packages.operationFailed"))
+      toast.error(friendlyError(err, "packages.operationFailed"))
     } finally {
       setSaving(false)
     }
@@ -116,7 +117,7 @@ const PackagesTable = ({
       onRefetch()
       toast.success(t("packages.deleteSuccess"))
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : t("packages.deleteFailed"))
+      toast.error(friendlyError(err, "packages.deleteFailed"))
     } finally {
       setDeleting(false)
     }

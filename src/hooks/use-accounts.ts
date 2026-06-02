@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react"
 import { apiFetch } from "@/lib/api"
+import { throwIfNotOk } from "@/lib/errors"
 import type { AdminAccount } from "@/types"
 
 // Returned when Cognito succeeds but DB insert fails (HTTP 207)
@@ -24,7 +25,7 @@ export function useAccounts() {
       setLoading(true)
       setError(null)
       const response = await apiFetch("/accounts")
-      if (!response.ok) throw new Error(`Failed to fetch accounts: ${response.status}`)
+      await throwIfNotOk(response, "Failed to fetch accounts")
       const data = await response.json()
       setAccounts(data)
     } catch (err) {
@@ -38,26 +39,25 @@ export function useAccounts() {
     fetchAccounts()
   }, [fetchAccounts])
 
-  // Returns the account on full success, or throws a DbSyncError on partial success (207)
+  // Returns the account on full success, or throws a DbSyncError on partial success (207).
+  // 207 needs special handling BEFORE throwIfNotOk so we can surface the structured payload
+  // to the AccountsTable retry UI.
   const createAccount = async (data: { email: string; full_name: string; phone?: string; role: string }) => {
     const response = await apiFetch("/accounts", {
       method: "POST",
       body: JSON.stringify(data),
     })
 
-    const body = await response.json().catch(() => null)
-
-    // 207 = Cognito succeeded but DB sync failed
-    if (response.status === 207 && body?.error === "db_sync_failed") {
-      const err: DbSyncError = { type: "db_sync_failed", account: body.account }
-      throw err
+    if (response.status === 207) {
+      const body = await response.json().catch(() => null)
+      if (body?.error === "db_sync_failed") {
+        const err: DbSyncError = { type: "db_sync_failed", account: body.account }
+        throw err
+      }
     }
 
-    if (!response.ok) {
-      throw new Error(body?.message || body?.error || `Failed: ${response.status}`)
-    }
-
-    return body as AdminAccount
+    await throwIfNotOk(response, "Failed to create account")
+    return response.json() as Promise<AdminAccount>
   }
 
   const updateAccount = async (id: string, data: Record<string, unknown>) => {
@@ -65,10 +65,7 @@ export function useAccounts() {
       method: "PUT",
       body: JSON.stringify(data),
     })
-    if (!response.ok) {
-      const errData = await response.json().catch(() => null)
-      throw new Error(errData?.message || errData?.error || `Failed: ${response.status}`)
-    }
+    await throwIfNotOk(response, "Failed to update account")
     return response.json()
   }
 
@@ -76,10 +73,7 @@ export function useAccounts() {
     const response = await apiFetch(`/accounts/${id}`, {
       method: "DELETE",
     })
-    if (!response.ok) {
-      const errData = await response.json().catch(() => null)
-      throw new Error(errData?.message || errData?.error || `Failed: ${response.status}`)
-    }
+    await throwIfNotOk(response, "Failed to delete account")
     return response.json()
   }
 
@@ -89,10 +83,7 @@ export function useAccounts() {
       method: "POST",
       body: JSON.stringify(account),
     })
-    if (!response.ok) {
-      const errData = await response.json().catch(() => null)
-      throw new Error(errData?.message || errData?.error || `Sync failed: ${response.status}`)
-    }
+    await throwIfNotOk(response, "Failed to sync account")
     return response.json() as Promise<AdminAccount>
   }
 
@@ -101,10 +92,7 @@ export function useAccounts() {
     const response = await apiFetch(`/accounts/${id}/reset-password`, {
       method: "POST",
     })
-    if (!response.ok) {
-      const errData = await response.json().catch(() => null)
-      throw new Error(errData?.message || errData?.error || `Failed: ${response.status}`)
-    }
+    await throwIfNotOk(response, "Failed to reset password")
     return response.json()
   }
 

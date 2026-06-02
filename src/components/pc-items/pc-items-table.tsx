@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import UserCombobox from "@/components/ui/user-combobox"
 import ConfirmDialog from "@/components/ui/confirm-dialog"
+import { friendlyError } from "@/lib/errors"
 import { useAuth } from "@/contexts/auth-context"
 import type { Item, ItemStage, User } from "@/types"
 
@@ -170,7 +171,7 @@ const PcItemsTable = ({
       setIsCreateOpen(false)
       onRefetch()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : t("pcItems.operationFailed"))
+      toast.error(friendlyError(err, "pcItems.operationFailed"))
     } finally {
       setSaving(false)
     }
@@ -193,7 +194,7 @@ const PcItemsTable = ({
       setAdvanceTarget(null)
       onRefetch()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : t("pcItems.operationFailed"))
+      toast.error(friendlyError(err, "pcItems.operationFailed"))
     } finally {
       setAdvancing(false)
     }
@@ -225,7 +226,7 @@ const PcItemsTable = ({
       setConfirmEditOpen(false)
       onRefetch()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : t("pcItems.operationFailed"))
+      toast.error(friendlyError(err, "pcItems.operationFailed"))
     } finally {
       setEditSaving(false)
     }
@@ -247,7 +248,7 @@ const PcItemsTable = ({
       setDeleteTarget(null)
       onRefetch()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : t("pcItems.deleteFailed"))
+      toast.error(friendlyError(err, "pcItems.deleteFailed"))
     } finally {
       setDeleting(false)
     }

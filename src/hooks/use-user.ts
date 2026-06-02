@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react"
 import { apiFetch } from "@/lib/api"
+import { throwIfNotOk } from "@/lib/errors"
 import type { User } from "@/types"
 
 export function useUser(id: string | undefined) {
@@ -18,7 +19,7 @@ export function useUser(id: string | undefined) {
       setLoading(true)
       setError(null)
       const response = await apiFetch(`/users/${id}`)
-      if (!response.ok) throw new Error(`Failed to fetch user: ${response.status}`)
+      await throwIfNotOk(response, "Failed to fetch client")
       const data = await response.json()
       setUser(data)
     } catch (err) {

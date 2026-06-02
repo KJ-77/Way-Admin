@@ -27,6 +27,7 @@ import {
 import UserCombobox from "@/components/ui/user-combobox"
 import ConfirmDialog from "@/components/ui/confirm-dialog"
 import { apiFetch } from "@/lib/api"
+import { friendlyError } from "@/lib/errors"
 import { useClayTypes } from "@/hooks/use-clay-types"
 import { useAuth } from "@/contexts/auth-context"
 import type { Item, ItemStage, ItemSection, User, UserPackage } from "@/types"
@@ -254,7 +255,7 @@ const ItemsTable = ({
       setIsCreateOpen(false)
       onRefetch()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : t("items.operationFailed"))
+      toast.error(friendlyError(err, "items.operationFailed"))
     } finally {
       setSaving(false)
     }
@@ -291,7 +292,7 @@ const ItemsTable = ({
       setAdvanceTarget(null)
       onRefetch()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : t("items.operationFailed"))
+      toast.error(friendlyError(err, "items.operationFailed"))
     } finally {
       setAdvancing(false)
     }
@@ -334,7 +335,7 @@ const ItemsTable = ({
       setConfirmEditOpen(false)
       onRefetch()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : t("items.operationFailed"))
+      toast.error(friendlyError(err, "items.operationFailed"))
     } finally {
       setEditSaving(false)
     }
@@ -353,7 +354,7 @@ const ItemsTable = ({
       setDeleteTarget(null)
       onRefetch()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : t("items.deleteFailed"))
+      toast.error(friendlyError(err, "items.deleteFailed"))
     } finally {
       setDeleting(false)
     }

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react"
 import { apiFetch } from "@/lib/api"
+import { throwIfNotOk } from "@/lib/errors"
 import type { User } from "@/types"
 
 // Response shape from POST /users — includes temp password for no-email clients
@@ -20,11 +21,11 @@ export function useUsers(opts: { includeDeleted?: boolean } = {}) {
       setError(null)
       const path = includeDeleted ? "/users?include_deleted=true" : "/users"
       const response = await apiFetch(path)
-      if (!response.ok) throw new Error(`Failed to fetch users: ${response.status}`)
+      await throwIfNotOk(response, "Failed to fetch clients")
       const data = await response.json()
       setUsers(data)
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to fetch users")
+      setError(err instanceof Error ? err.message : "Failed to fetch clients")
     } finally {
       setLoading(false)
     }
@@ -39,14 +40,7 @@ export function useUsers(opts: { includeDeleted?: boolean } = {}) {
       method: "POST",
       body: JSON.stringify(body),
     })
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => null)
-      const errorMsg = errorData?.message
-        || errorData?.issues?.map((i: { path: string[]; message: string }) => `${i.path.join(".")}: ${i.message}`).join(", ")
-        || errorData?.error
-        || `Failed to create client: ${response.status}`
-      throw new Error(errorMsg)
-    }
+    await throwIfNotOk(response, "Failed to create client")
     return response.json()
   }
 
@@ -55,35 +49,31 @@ export function useUsers(opts: { includeDeleted?: boolean } = {}) {
       method: "PUT",
       body: JSON.stringify(body),
     })
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => null)
-      const errorMsg = errorData?.message
-        || errorData?.issues?.map((i: { path: string[]; message: string }) => `${i.path.join(".")}: ${i.message}`).join(", ")
-        || errorData?.error
-        || `Failed to update client: ${response.status}`
-      throw new Error(errorMsg)
-    }
+    await throwIfNotOk(response, "Failed to update client")
     return response.json()
   }
 
   // Soft-delete — backend flips is_active=false and disables the Cognito user.
   const deleteUser = async (id: string): Promise<void> => {
     const response = await apiFetch(`/users/${id}`, { method: "DELETE" })
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => null)
-      throw new Error(errorData?.message || errorData?.error || `Failed to delete client: ${response.status}`)
-    }
+    await throwIfNotOk(response, "Failed to delete client")
   }
 
   // Reverses a soft-delete — flips is_active=true and re-enables the Cognito login.
   const restoreUser = async (id: string): Promise<User> => {
     const response = await apiFetch(`/users/${id}/restore`, { method: "POST" })
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => null)
-      throw new Error(errorData?.message || errorData?.error || `Failed to restore client: ${response.status}`)
-    }
+    await throwIfNotOk(response, "Failed to restore client")
     return response.json()
   }
 
-  return { users, loading, error, refetch: fetchUsers, createUser, updateUser, deleteUser, restoreUser }
+  // Admin/studio-manager initiated password reset — backend generates a temp password,
+  // puts the Cognito user in FORCE_CHANGE_PASSWORD state, and returns the temp password
+  // so the admin can read it out / copy it to share with the client.
+  const resetPassword = async (id: string): Promise<{ tempPassword: string }> => {
+    const response = await apiFetch(`/users/${id}/reset-password`, { method: "POST" })
+    await throwIfNotOk(response, "Failed to reset client password")
+    return response.json()
+  }
+
+  return { users, loading, error, refetch: fetchUsers, createUser, updateUser, deleteUser, restoreUser, resetPassword }
 }

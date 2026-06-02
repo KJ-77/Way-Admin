@@ -16,6 +16,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useClayTypes, type ClayType } from "@/hooks/use-clay-types"
+import { friendlyError } from "@/lib/errors"
 import ConfirmDialog from "@/components/ui/confirm-dialog"
 
 const ClayTypesTable = () => {
@@ -61,7 +62,7 @@ const ClayTypesTable = () => {
       setConfirmEditOpen(false)
       refetch()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : t("clayTypes.operationFailed"))
+      toast.error(friendlyError(err, "clayTypes.operationFailed"))
     } finally {
       setSaving(false)
     }
@@ -80,7 +81,7 @@ const ClayTypesTable = () => {
       setDeleteTarget(null)
       refetch()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : t("clayTypes.deleteFailed"))
+      toast.error(friendlyError(err, "clayTypes.deleteFailed"))
     } finally {
       setDeleting(false)
     }

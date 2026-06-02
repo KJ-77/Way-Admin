@@ -1,6 +1,6 @@
 import { format, differenceInYears } from "date-fns"
 import {
-  User as UserIcon, Heart, GraduationCap, Briefcase, Calendar, Clock,
+  User as UserIcon, Heart, GraduationCap, Calendar, Clock,
   MessageSquare, Users,
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -74,7 +74,6 @@ const UserInfoCard = ({ user, tutors }: UserInfoCardProps) => {
           <div>
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Membership</p>
             <InfoRow icon={Heart} label="Loyalty" value={user.loyalty || "—"} />
-            <InfoRow icon={Briefcase} label="Section" value={user.section || "—"} />
             <InfoRow icon={Users} label="Referral Source" value={user.referral_source} />
           </div>
 

@@ -3,6 +3,38 @@
     "name": "Way Studio",
     "tagline": "Art Studio Admin"
   },
+  "errors": {
+    "unknown": "Something went wrong. Please try again, or contact support if this keeps happening.",
+    "network": "Couldn't reach the server. Check your internet connection and try again.",
+    "codes": {
+      "PHONE_TAKEN": "This phone number is already registered to another client.",
+      "EMAIL_TAKEN": "This email is already in use by another client.",
+      "DUPLICATE": "This entry already exists.",
+      "FK_VIOLATION": "Can't complete this — another record depends on this data.",
+      "SCHEDULE_CONFLICT": "Another class is already scheduled during this time slot.",
+      "USERNAME_EXISTS": "This account already exists.",
+      "USER_NOT_FOUND": "We couldn't find that account.",
+      "INVALID_CREDENTIALS": "Wrong email or password. Please try again.",
+      "SERVER_ERROR": "Something went wrong on our end. Please try again in a moment.",
+      "COGNITO_DISABLE_FAILED": "Couldn't deactivate the user's login. The account is still active. Please try again or contact support.",
+      "ROLLBACK_FAILED": "A serious error occurred during cleanup. Please contact support before retrying.",
+      "DB_INSERT_FAILED": "Couldn't save the new client. Please try again.",
+      "COGNITO_RESET_FAILED": "Couldn't reset the client's password. Please try again or contact support.",
+      "USER_INACTIVE": "This client is deleted. Restore them before resetting their password."
+    },
+    "status": {
+      "400": "Something in the request was invalid. Please check the form and try again.",
+      "401": "Your session has expired. Please log in again.",
+      "403": "You don't have permission to do this.",
+      "404": "We couldn't find what you were looking for.",
+      "409": "This conflicts with existing data.",
+      "429": "Too many requests. Please wait a moment and try again.",
+      "500": "Something went wrong on our end. Please try again in a moment.",
+      "502": "The server is temporarily unavailable. Please try again shortly.",
+      "503": "The server is temporarily unavailable. Please try again shortly.",
+      "504": "The server took too long to respond. Please try again."
+    }
+  },
   "nav": {
     "dashboard": "Dashboard",
     "users": "Clients",
@@ -57,7 +89,6 @@
     "phone": "Phone",
     "level": "Level",
     "status": "Status",
-    "section": "Section",
     "loyalty": "Loyalty",
     "gender": "Gender",
     "dateOfBirth": "Date of Birth",
@@ -73,7 +104,6 @@
     "dormant": "Dormant",
     "allStatuses": "All Statuses",
     "allLevels": "All Levels",
-    "allSections": "All Sections",
     "addUserTitle": "Add New Client",
     "addUserDescription": "Fill in the details to register a new client.",
     "pickDate": "Pick a date",
@@ -81,6 +111,7 @@
     "notesPlaceholder": "Optional notes about this client...",
     "deleteConfirm": "Delete Client",
     "deleteWarning": "This client will be hidden from the clients list and their login will be disabled. Their history (sessions, items, subscriptions) is preserved and the client can be restored later.",
+    "deleteFailed": "Failed to delete client",
     "showDeleted": "Show deleted",
     "deleted": "Deleted",
     "deletedBanner": "This client has been deleted. Their data is preserved and their login is disabled.",
@@ -88,7 +119,15 @@
     "restoreConfirmTitle": "Restore this client?",
     "restoreConfirmDescription": "This client will reappear in the active clients list and their login will be re-enabled.",
     "restoreSuccess": "Client restored",
-    "restoreFailed": "Failed to restore client"
+    "restoreFailed": "Failed to restore client",
+    "resetPassword": "Reset Password",
+    "resetPasswordConfirm": "Reset Password",
+    "resetPasswordWarning": "This will generate a temporary password for the client. They'll need to set a new password the next time they log in. Any active sessions will be signed out.",
+    "resetPasswordDone": "The password has been reset. Share the temporary password below with the client.",
+    "resetPasswordSuccess": "Password reset successfully",
+    "resetPasswordFailed": "Failed to reset password",
+    "tempPasswordLabel": "Temporary Password",
+    "tempPasswordHint": "The client will be asked to set a new password when they log in with this."
   },
   "sessions": {
     "title": "Sessions",

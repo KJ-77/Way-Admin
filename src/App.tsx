@@ -47,7 +47,7 @@ const App = () => {
                         <Route
                           path="/clay-types"
                           element={
-                            <ProtectedRoute allowedRoles={["admin", "studio-manager"]}>
+                            <ProtectedRoute allowedRoles={["admin"]}>
                               <ClayTypesPage />
                             </ProtectedRoute>
                           }

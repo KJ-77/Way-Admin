@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react"
 import { apiFetch } from "@/lib/api"
+import { throwIfNotOk } from "@/lib/errors"
 import type { Item } from "@/types"
 
 export function useItems() {
@@ -12,7 +13,7 @@ export function useItems() {
       setLoading(true)
       setError(null)
       const response = await apiFetch("/items")
-      if (!response.ok) throw new Error(`Failed to fetch items: ${response.status}`)
+      await throwIfNotOk(response, "Failed to fetch items")
       const data = await response.json()
       setItems(data)
     } catch (err) {
@@ -31,10 +32,7 @@ export function useItems() {
       method: "POST",
       body: JSON.stringify(body),
     })
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => null)
-      throw new Error(errorData?.error || errorData?.message || `Failed to create item: ${response.status}`)
-    }
+    await throwIfNotOk(response, "Failed to create item")
     return response.json()
   }
 
@@ -43,19 +41,13 @@ export function useItems() {
       method: "PUT",
       body: JSON.stringify(body),
     })
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => null)
-      throw new Error(errorData?.error || errorData?.message || `Failed to update item: ${response.status}`)
-    }
+    await throwIfNotOk(response, "Failed to update item")
     return response.json()
   }
 
   const deleteItem = async (id: number): Promise<void> => {
     const response = await apiFetch(`/items/${id}`, { method: "DELETE" })
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => null)
-      throw new Error(errorData?.error || errorData?.message || `Failed to delete item: ${response.status}`)
-    }
+    await throwIfNotOk(response, "Failed to delete item")
   }
 
   return { items, loading, error, refetch: fetchItems, createItem, updateItem, deleteItem }

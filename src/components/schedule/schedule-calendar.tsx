@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/tooltip"
 import { useSchedule, getBeirutWeekStart } from "@/hooks/use-schedule"
 import { apiFetch } from "@/lib/api"
+import { friendlyError, ApiError } from "@/lib/errors"
 import ConfirmDialog from "@/components/ui/confirm-dialog"
 import type { ScheduleSlot, Tutor } from "@/types"
 
@@ -212,11 +213,12 @@ const ScheduleCalendar = () => {
       setConfirmTemplateOpen(false)
       refetch()
     } catch (err) {
-      const message = err instanceof Error ? err.message : t("schedule.operationFailed")
-      if (message.includes("409") || message.toLowerCase().includes("conflict")) {
+      // Schedule conflicts have a dedicated code from the backend (SCHEDULE_CONFLICT, status 409).
+      // Anything else goes through the generic friendlyError mapping.
+      if (err instanceof ApiError && (err.code === "SCHEDULE_CONFLICT" || err.status === 409)) {
         toast.error(t("schedule.conflictError"))
       } else {
-        toast.error(message)
+        toast.error(friendlyError(err, "schedule.operationFailed"))
       }
     } finally {
       setSaving(false)
@@ -241,7 +243,7 @@ const ScheduleCalendar = () => {
       setConfirmOverrideOpen(false)
       refetch()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : t("schedule.overrideFailed"))
+      toast.error(friendlyError(err, "schedule.overrideFailed"))
     } finally {
       setSavingOverride(false)
     }
@@ -258,7 +260,7 @@ const ScheduleCalendar = () => {
       setConfirmClearOverrideOpen(false)
       refetch()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : t("schedule.overrideFailed"))
+      toast.error(friendlyError(err, "schedule.overrideFailed"))
     } finally {
       setSavingOverride(false)
     }
@@ -280,7 +282,7 @@ const ScheduleCalendar = () => {
       refetch()
       toast.success(t("schedule.deleteSuccess"))
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : t("schedule.deleteFailed"))
+      toast.error(friendlyError(err, "schedule.deleteFailed"))
     } finally {
       setDeleting(false)
     }
