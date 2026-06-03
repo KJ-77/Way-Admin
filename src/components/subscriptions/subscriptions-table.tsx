@@ -29,6 +29,7 @@ import { apiFetch } from "@/lib/api"
 import { throwIfNotOk, friendlyError } from "@/lib/errors"
 import UserCombobox from "@/components/ui/user-combobox"
 import ConfirmDialog from "@/components/ui/confirm-dialog"
+import ClassPicker from "@/components/sessions/class-picker"
 import type { UserPackage, User, Package, PackageStatus, Attendance } from "@/types"
 
 // ── Props ──
@@ -101,6 +102,9 @@ const SubscriptionsTable = ({
   const [sessionTarget, setSessionTarget] = useState<UserPackage | null>(null)
   const [sessionAttendance, setSessionAttendance] = useState<Attendance>("attended")
   const [sessionNotes, setSessionNotes] = useState("")
+  // Class link — required for new sessions (migration 003)
+  const [sessionClassDate, setSessionClassDate] = useState("")
+  const [sessionSlotId, setSessionSlotId] = useState("")
   const [savingSession, setSavingSession] = useState(false)
 
   // ── Filtering ──
@@ -131,6 +135,8 @@ const SubscriptionsTable = ({
     setSessionTarget(sub)
     setSessionAttendance("attended")
     setSessionNotes("")
+    setSessionClassDate("")
+    setSessionSlotId("")
     setIsSessionOpen(true)
   }
 
@@ -198,11 +204,14 @@ const SubscriptionsTable = ({
     if (!sessionTarget) return
     setSavingSession(true)
     try {
+      // sessionTarget.id IS the user_package_id (it's the subscription row).
+      // schedule_slot_id + class_date come from the ClassPicker below.
       const res = await apiFetch("/sessions", {
         method: "POST",
         body: JSON.stringify({
-          user_id: sessionTarget.user_id,
-          package_id: sessionTarget.package_id,
+          user_package_id: sessionTarget.id,
+          schedule_slot_id: Number(sessionSlotId),
+          class_date: sessionClassDate,
           attendance: sessionAttendance,
           notes: sessionNotes || undefined,
         }),
@@ -217,6 +226,9 @@ const SubscriptionsTable = ({
       setSavingSession(false)
     }
   }
+
+  // Save button disabled until both class link fields are filled
+  const sessionValid = sessionClassDate && sessionSlotId
 
   // ── Render ──
 
@@ -562,6 +574,14 @@ const SubscriptionsTable = ({
             </p>
           )}
           <div className="grid gap-4 py-4">
+            <ClassPicker
+              classDate={sessionClassDate}
+              scheduleSlotId={sessionSlotId}
+              onChange={({ class_date, schedule_slot_id }) => {
+                setSessionClassDate(class_date)
+                setSessionSlotId(schedule_slot_id)
+              }}
+            />
             <div className="grid gap-2">
               <Label>{t("subscriptions.sessionAttendance")}</Label>
               <Select value={sessionAttendance} onValueChange={(v) => setSessionAttendance(v as Attendance)}>
@@ -590,7 +610,7 @@ const SubscriptionsTable = ({
             <Button variant="outline" onClick={() => setIsSessionOpen(false)} disabled={savingSession}>
               {t("common.cancel")}
             </Button>
-            <Button onClick={handleCreateSession} disabled={savingSession}>
+            <Button onClick={handleCreateSession} disabled={!sessionValid || savingSession}>
               {savingSession && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {t("common.create")}
             </Button>

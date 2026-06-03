@@ -10,7 +10,7 @@ const StatsCards = () => {
     {
       title: t("dashboard.totalClients"),
       value: stats.totalClients,
-      subtext: `${stats.activeClients} ${t("users.active").toLowerCase()}`,
+      subtext: `${stats.activeClients} active`,
       icon: Users,
       trend: "+2 this month",
       color: "text-chart-1",

@@ -15,11 +15,6 @@ import { apiFetch } from "@/lib/api"
 import { throwIfNotOk, friendlyError } from "@/lib/errors"
 import type { User } from "@/types"
 
-const statusColors: Record<string, string> = {
-  Active: "bg-emerald-500/15 text-emerald-500 border-emerald-500/30",
-  Dormant: "bg-zinc-500/15 text-zinc-400 border-zinc-500/30",
-}
-
 const levelColors: Record<string, string> = {
   Beginner: "bg-blue-500/15 text-blue-400 border-blue-500/30",
   Mid: "bg-amber-500/15 text-amber-400 border-amber-500/30",
@@ -105,7 +100,6 @@ const UserProfileHeader = ({ user, onUserUpdated, children }: UserProfileHeaderP
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
               <h1 className="text-2xl font-bold tracking-tight">{user.full_name}</h1>
               <div className="flex gap-2 flex-wrap">
-                {user.status && <Badge variant="outline" className={statusColors[user.status]}>{user.status}</Badge>}
                 {user.level && <Badge variant="outline" className={levelColors[user.level]}>{user.level}</Badge>}
                 {user.loyalty && <Badge variant="outline" className={loyaltyColors[user.loyalty]}>{user.loyalty} Loyalty</Badge>}
               </div>

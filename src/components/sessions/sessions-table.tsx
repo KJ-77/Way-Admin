@@ -28,6 +28,7 @@ import { apiFetch } from "@/lib/api"
 import { friendlyError } from "@/lib/errors"
 import UserCombobox from "@/components/ui/user-combobox"
 import ConfirmDialog from "@/components/ui/confirm-dialog"
+import ClassPicker from "@/components/sessions/class-picker"
 import type { Session, User, UserPackage, Attendance } from "@/types"
 
 // Maps attendance enum values to translation keys (handles the "cancelled - no charge" key)
@@ -54,8 +55,10 @@ interface SessionsTableProps {
 // ── Form data shapes ──
 
 interface CreateFormData {
-  user_id: string          // drives the subscription picker; not sent to the API
-  user_package_id: string  // the actual session anchor — what gets sent
+  user_id: string             // drives the subscription picker; not sent to the API
+  user_package_id: string     // the actual session anchor — what gets sent
+  class_date: string          // YYYY-MM-DD — required for new sessions
+  schedule_slot_id: string    // class occurrence id — required for new sessions
   attendance: string
   notes: string
 }
@@ -68,6 +71,7 @@ interface EditFormData {
 
 const emptyCreateForm: CreateFormData = {
   user_id: "", user_package_id: "",
+  class_date: "", schedule_slot_id: "",
   attendance: "attended", notes: "",
 }
 
@@ -93,6 +97,22 @@ const formatDateTime = (iso: string) => {
   const time = d.toLocaleTimeString("en", { hour: "numeric", minute: "2-digit" })
   return { date, time }
 }
+
+// Format a class_date as "Jun 15" (year omitted — close enough to "now").
+// pg returns DATE columns as full ISO strings (`2026-06-15T00:00:00.000Z`), so
+// we parse directly without re-anchoring. timeZone: "UTC" displays the wall-clock
+// date as stored (midnight UTC), avoiding off-by-one when the admin's local TZ
+// is west of UTC.
+const formatClassDate = (isoOrYmd: string) => {
+  const d = new Date(isoOrYmd)
+  return d.toLocaleDateString("en", { month: "short", day: "numeric", timeZone: "UTC" })
+}
+
+// "wheel throwing explorer" → "Wheel Throwing Explorer"
+const titleCase = (s: string) => s.replace(/\b\w/g, c => c.toUpperCase())
+
+// Strip seconds from "HH:MM:SS"
+const trimSeconds = (t: string) => (t.length > 5 ? t.slice(0, 5) : t)
 
 // ── Component ──
 
@@ -192,6 +212,8 @@ const SessionsTable = ({
       // session_nb is auto-calculated by the backend
       await onCreateSession({
         user_package_id: Number(createForm.user_package_id),
+        schedule_slot_id: Number(createForm.schedule_slot_id),
+        class_date: createForm.class_date,
         attendance: createForm.attendance,
         notes: createForm.notes || undefined,
       })
@@ -241,9 +263,13 @@ const SessionsTable = ({
     }
   }
 
-  // Check if create form is valid
+  // Check if create form is valid — all four ids/dates required, attendance has a default
   const isCreateValid =
-    createForm.user_id && createForm.user_package_id && createForm.attendance
+    createForm.user_id &&
+    createForm.user_package_id &&
+    createForm.class_date &&
+    createForm.schedule_slot_id &&
+    createForm.attendance
 
   // ── Render ──
 
@@ -307,6 +333,7 @@ const SessionsTable = ({
                     <TableRow>
                       <TableHead>{t("sessions.client")}</TableHead>
                       <TableHead>{t("sessions.date")}</TableHead>
+                      <TableHead className="hidden md:table-cell">{t("sessions.class")}</TableHead>
                       <TableHead className="hidden md:table-cell">{t("sessions.package")}</TableHead>
                       <TableHead className="hidden md:table-cell">{t("sessions.sessionNb")}</TableHead>
                       <TableHead>{t("sessions.attendance")}</TableHead>
@@ -334,6 +361,20 @@ const SessionsTable = ({
                             <TableCell className="text-sm">
                               <span className="text-foreground">{date}</span>
                               <span className="text-muted-foreground ms-1.5 text-xs">{time}</span>
+                            </TableCell>
+                            <TableCell className="hidden md:table-cell text-sm text-muted-foreground max-w-[200px] truncate">
+                              {/* Legacy sessions (pre-migration-003) have no class link → em-dash */}
+                              {session.class_name && session.class_date ? (
+                                <span>
+                                  <span className="text-foreground">{titleCase(session.class_name)}</span>
+                                  <span className="ms-1.5 text-xs">
+                                    {formatClassDate(session.class_date)}
+                                    {session.class_start_time && ` · ${trimSeconds(session.class_start_time)}`}
+                                  </span>
+                                </span>
+                              ) : (
+                                t("sessions.noClassLinked")
+                              )}
                             </TableCell>
                             <TableCell className="hidden md:table-cell text-sm text-muted-foreground max-w-[180px] truncate">
                               {session.package_name}
@@ -440,6 +481,15 @@ const SessionsTable = ({
                 </Select>
               )}
             </div>
+
+            {/* Class date + class — picker is shared across all three "create session" entry points */}
+            <ClassPicker
+              classDate={createForm.class_date}
+              scheduleSlotId={createForm.schedule_slot_id}
+              onChange={({ class_date, schedule_slot_id }) =>
+                setCreateForm(prev => ({ ...prev, class_date, schedule_slot_id }))
+              }
+            />
 
             <div className="grid gap-4">
               {/* Attendance */}

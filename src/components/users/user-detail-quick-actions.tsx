@@ -15,6 +15,7 @@ import {
 import { apiFetch } from "@/lib/api"
 import { throwIfNotOk, friendlyError } from "@/lib/errors"
 import AddUserDialog from "@/components/users/add-user-dialog"
+import ClassPicker from "@/components/sessions/class-picker"
 import type { User, UserPackage, Package } from "@/types"
 import type { CreateUserResponse } from "@/hooks/use-users"
 
@@ -34,7 +35,14 @@ const UserDetailQuickActions = ({
   // ── Session dialog state ──
   const [sessionOpen, setSessionOpen] = useState(false)
   // user_package_id = which subscription this session anchors to (sub.id, not sub.package_id)
-  const [sessionForm, setSessionForm] = useState({ user_package_id: "", attendance: "attended", notes: "" })
+  // schedule_slot_id + class_date = which class occurrence this session is for
+  const [sessionForm, setSessionForm] = useState({
+    user_package_id: "",
+    schedule_slot_id: "",
+    class_date: "",
+    attendance: "attended",
+    notes: "",
+  })
   const [sessionSaving, setSessionSaving] = useState(false)
 
   // Active subscriptions for the session dialog
@@ -102,6 +110,8 @@ const UserDetailQuickActions = ({
         method: "POST",
         body: JSON.stringify({
           user_package_id: Number(sessionForm.user_package_id),
+          schedule_slot_id: Number(sessionForm.schedule_slot_id),
+          class_date: sessionForm.class_date,
           attendance: sessionForm.attendance,
           notes: sessionForm.notes || undefined,
         }),
@@ -139,7 +149,11 @@ const UserDetailQuickActions = ({
     }
   }
 
-  const sessionValid = sessionForm.user_package_id && sessionForm.attendance
+  const sessionValid =
+    sessionForm.user_package_id &&
+    sessionForm.schedule_slot_id &&
+    sessionForm.class_date &&
+    sessionForm.attendance
 
   // Resets the client's Cognito password — backend returns a temp password we surface
   // in the dialog so the admin can read/copy it.
@@ -210,7 +224,13 @@ const UserDetailQuickActions = ({
           size="sm"
           className="gap-1.5"
           onClick={() => {
-            setSessionForm({ user_package_id: "", attendance: "attended", notes: "" })
+            setSessionForm({
+              user_package_id: "",
+              schedule_slot_id: "",
+              class_date: "",
+              attendance: "attended",
+              notes: "",
+            })
             setSessionOpen(true)
           }}
         >
@@ -285,6 +305,14 @@ const UserDetailQuickActions = ({
                 </Select>
               )}
             </div>
+
+            <ClassPicker
+              classDate={sessionForm.class_date}
+              scheduleSlotId={sessionForm.schedule_slot_id}
+              onChange={({ class_date, schedule_slot_id }) =>
+                setSessionForm(prev => ({ ...prev, class_date, schedule_slot_id }))
+              }
+            />
 
             <div className="grid gap-4">
               <div className="grid gap-2">

@@ -20,7 +20,7 @@ const UsersStats = ({ users, loading }: UsersStatsProps) => {
     },
     {
       label: "Active",
-      value: users.filter(u => u.status === "Active").length,
+      value: users.filter(u => u.is_active).length,
       icon: UserCheck,
       color: "text-chart-2 bg-chart-2/10",
     },

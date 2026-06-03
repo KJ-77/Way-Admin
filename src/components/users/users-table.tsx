@@ -26,7 +26,7 @@ import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import AddUserDialog from "@/components/users/add-user-dialog"
 import { friendlyError } from "@/lib/errors"
-import type { User, Tutor, UserStatus, Level } from "@/types"
+import type { User, Tutor, Level } from "@/types"
 import type { CreateUserResponse } from "@/hooks/use-users"
 
 interface UsersTableProps {
@@ -42,11 +42,6 @@ interface UsersTableProps {
   // re-runs the API query with ?include_deleted=true.
   showDeleted: boolean
   onShowDeletedChange: (v: boolean) => void
-}
-
-const statusColors: Record<string, string> = {
-  Active: "bg-emerald-500/15 text-emerald-500 border-emerald-500/30",
-  Dormant: "bg-zinc-500/15 text-zinc-400 border-zinc-500/30",
 }
 
 const levelColors: Record<string, string> = {
@@ -69,7 +64,6 @@ const UsersTable = ({
   const navigate = useNavigate()
   const [search, setSearch] = useState("")
   const [isAddOpen, setIsAddOpen] = useState(false)
-  const [statusFilter, setStatusFilter] = useState<UserStatus | "all">("all")
   const [levelFilter, setLevelFilter] = useState<Level | "all">("all")
 
   // Edit mode — when set, the AddUserDialog opens in edit mode
@@ -83,9 +77,8 @@ const UsersTable = ({
     const matchesSearch = user.full_name.toLowerCase().includes(search.toLowerCase()) ||
       (user.email?.toLowerCase().includes(search.toLowerCase()) ?? false) ||
       user.phone.includes(search)
-    const matchesStatus = statusFilter === "all" || user.status === statusFilter
     const matchesLevel = levelFilter === "all" || user.level === levelFilter
-    return matchesSearch && matchesStatus && matchesLevel
+    return matchesSearch && matchesLevel
   })
 
   const openEdit = (user: User) => {
@@ -142,19 +135,9 @@ const UsersTable = ({
             />
           </div>
           <div className="flex gap-2 flex-wrap">
-            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as UserStatus | "all")}>
-              <SelectTrigger className="w-[130px]">
-                <Filter className="h-3.5 w-3.5 me-1.5" />
-                <SelectValue placeholder={t("users.allStatuses")} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t("users.allStatuses")}</SelectItem>
-                <SelectItem value="Active">{t("users.active")}</SelectItem>
-                <SelectItem value="Dormant">{t("users.dormant")}</SelectItem>
-              </SelectContent>
-            </Select>
             <Select value={levelFilter} onValueChange={(v) => setLevelFilter(v as Level | "all")}>
               <SelectTrigger className="w-[140px]">
+                <Filter className="h-3.5 w-3.5 me-1.5" />
                 <SelectValue placeholder={t("users.allLevels")} />
               </SelectTrigger>
               <SelectContent>
@@ -194,7 +177,6 @@ const UsersTable = ({
                     <TableHead className="hidden md:table-cell">{t("users.email")}</TableHead>
                     <TableHead>{t("users.level")}</TableHead>
                     <TableHead className="hidden lg:table-cell">{t("users.loyalty")}</TableHead>
-                    <TableHead>{t("users.status")}</TableHead>
                     <TableHead className="hidden lg:table-cell">{t("users.preferredTutor")}</TableHead>
                     <TableHead className="w-10" />
                   </TableRow>
@@ -202,7 +184,7 @@ const UsersTable = ({
                 <TableBody>
                   {filteredUsers.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                      <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
                         {t("common.noResults")}
                       </TableCell>
                     </TableRow>
@@ -247,13 +229,6 @@ const UsersTable = ({
                           {user.loyalty ? (
                             <Badge variant="outline" className={loyaltyColors[user.loyalty]}>
                               {user.loyalty}
-                            </Badge>
-                          ) : <span className="text-sm text-muted-foreground">—</span>}
-                        </TableCell>
-                        <TableCell>
-                          {user.status ? (
-                            <Badge variant="outline" className={statusColors[user.status]}>
-                              {user.status}
                             </Badge>
                           ) : <span className="text-sm text-muted-foreground">—</span>}
                         </TableCell>

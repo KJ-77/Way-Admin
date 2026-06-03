@@ -16,6 +16,17 @@ const attendanceColors: Record<string, string> = {
   "cancelled - no charge": "bg-sky-500/15 text-sky-400 border-sky-500/30",
 }
 
+// "wheel throwing explorer" → "Wheel Throwing Explorer"
+const titleCase = (s: string) => s.replace(/\b\w/g, c => c.toUpperCase())
+
+// Format a class_date as "Jun 15, 2026". pg returns DATE columns as full ISO
+// strings (`2026-06-15T00:00:00.000Z`), so parse directly. timeZone: "UTC"
+// keeps the date as stored without local-TZ drift.
+const formatClassDate = (isoOrYmd: string) => {
+  const d = new Date(isoOrYmd)
+  return d.toLocaleDateString("en", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" })
+}
+
 const UserDetailSessions = ({ sessions, loading }: UserDetailSessionsProps) => {
   return (
     <Card className="lg:col-span-2">
@@ -66,10 +77,25 @@ const UserDetailSessions = ({ sessions, loading }: UserDetailSessionsProps) => {
                   {/* Session details */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-medium">{session.package_name}</span>
+                      {/* Prefer the linked class name; fall back to subscription package
+                          for legacy rows without a class link. */}
+                      <span className="text-sm font-medium">
+                        {session.class_name ? titleCase(session.class_name) : session.package_name}
+                      </span>
                     </div>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      {date} <span className="ms-1">{time}</span>
+                      {/* Show class_date when present (the actual class day), else the
+                          session's logged-at timestamp (legacy fallback). */}
+                      {session.class_date ? (
+                        <>
+                          {formatClassDate(session.class_date)}
+                          <span className="ms-1.5 text-muted-foreground/70">(logged {date})</span>
+                        </>
+                      ) : (
+                        <>
+                          {date} <span className="ms-1">{time}</span>
+                        </>
+                      )}
                     </p>
                   </div>
 

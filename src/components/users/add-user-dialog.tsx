@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/popover"
 import { cn, normalizePhone } from "@/lib/utils"
 import ConfirmDialog from "@/components/ui/confirm-dialog"
-import type { User, Gender, Level, Loyalty, ReferralSource, UserStatus } from "@/types"
+import type { User, Gender, Level, Loyalty, ReferralSource } from "@/types"
 import type { CreateUserResponse } from "@/hooks/use-users"
 
 interface AddUserDialogProps {
@@ -43,7 +43,6 @@ interface FormData {
   level: Level | ""
   loyalty: Loyalty | ""
   first_visit: Date | undefined
-  status: UserStatus | ""
   preferred_tutor: string
   notes: string
 }
@@ -58,7 +57,6 @@ const emptyForm: FormData = {
   level: "",
   loyalty: "",
   first_visit: new Date(),
-  status: "",
   preferred_tutor: "",
   notes: "",
 }
@@ -81,7 +79,6 @@ const userToForm = (user: User): FormData => ({
   level: user.level || "",
   loyalty: user.loyalty || "",
   first_visit: parseDate(user.first_visit),
-  status: user.status || "",
   preferred_tutor: user.preferred_tutor != null ? String(user.preferred_tutor) : "",
   notes: user.notes || "",
 })
@@ -201,7 +198,6 @@ const AddUserDialog = ({ open, onOpenChange, onSuccess, onCreateUser, onUpdateUs
     if (formData.level) body.level = formData.level
     if (formData.loyalty) body.loyalty = formData.loyalty
     if (formData.first_visit) body.first_visit = format(formData.first_visit, "yyyy-MM-dd")
-    if (formData.status) body.status = formData.status
     if (formData.preferred_tutor.trim()) {
       const tutorId = parseInt(formData.preferred_tutor, 10)
       if (!isNaN(tutorId)) body.preferred_tutor = tutorId
@@ -436,20 +432,6 @@ const AddUserDialog = ({ open, onOpenChange, onSuccess, onCreateUser, onUpdateUs
                     <SelectItem value="Low">Low</SelectItem>
                     <SelectItem value="Mid">Mid</SelectItem>
                     <SelectItem value="High">High</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Status */}
-              <div className="space-y-2">
-                <Label>{t("users.status")}</Label>
-                <Select value={formData.status} onValueChange={v => updateField("status", v as UserStatus)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Active">Active</SelectItem>
-                    <SelectItem value="Dormant">Dormant</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

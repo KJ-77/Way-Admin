@@ -36,6 +36,19 @@ export function addDays(yyyyMmDd: string, days: number): string {
   return d.toISOString().slice(0, 10)
 }
 
+// Day-of-week for a YYYY-MM-DD date interpreted in Beirut, mapped to the
+// schedule.day_of_week convention (0=Monday..6=Sunday). Mirrors backend
+// src/lib/time.ts → keep in lockstep.
+export function getBeirutDayOfWeek(yyyyMmDd: string): number {
+  const dt = new Date(`${yyyyMmDd}T00:00:00Z`)
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: STUDIO_TZ,
+    weekday: "short",
+  }).formatToParts(dt)
+  const weekday = parts.find(p => p.type === "weekday")!.value
+  return DAYS_FROM_MONDAY[weekday]
+}
+
 export function useSchedule(initialWeek?: string) {
   const [weekStart, setWeekStart] = useState<string>(initialWeek ?? getBeirutWeekStart())
   const [slots, setSlots] = useState<ScheduleSlot[]>([])

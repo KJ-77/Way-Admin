@@ -2,7 +2,6 @@ export type Gender = "Male" | "Female"
 export type Level = "Beginner" | "Mid" | "Advanced"
 export type Loyalty = "Low" | "Mid" | "High"
 export type ReferralSource = "Referral" | "SCM" | "Walk-In"
-export type UserStatus = "Active" | "Dormant"
 export type PackageStatus = "active" | "expired" | "depleted"
 export type ClassType = "pottery" | "glass" | "canvas" | "mixed-media"
 export type Attendance = "attended" | "booked" | "cancelled" | "cancelled - no charge"
@@ -31,7 +30,6 @@ export interface User {
   loyalty?: Loyalty
   email?: string
   first_visit?: string
-  status?: UserStatus
   notes?: string
   // Soft-delete flag. Inactive clients are hidden from the default clients list
   // (toggle "show deleted" to reveal them). Their Cognito login is disabled.
@@ -75,6 +73,10 @@ export interface Session {
   id: number
   // The only direct link from sessions — user/package are derived via this FK.
   user_package_id: number
+  // Class link — together identify the class occurrence this session is for.
+  // NULL on legacy rows that pre-date migration 003; required on all new rows.
+  schedule_slot_id: number | null
+  class_date: string | null  // "YYYY-MM-DD"
   session_nb: number
   attendance: Attendance
   notes?: string
@@ -84,6 +86,10 @@ export interface Session {
   package_id: number
   user_name: string
   package_name: string
+  // Joined via schedule (LEFT JOIN; null for legacy rows)
+  class_name: string | null         // e.g. "wheel throwing explorer"
+  class_start_time: string | null   // "HH:MM:SS"
+  class_end_time: string | null     // "HH:MM:SS"
 }
 
 export interface Tutor {
