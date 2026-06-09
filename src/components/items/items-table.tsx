@@ -44,8 +44,9 @@ const PC_ALLOWED_STAGES: ItemStage[] = ["glaze fired", "ready", "picked up", "di
 // All stages including terminal "discarded" (used in Studio filters + edit dropdown)
 const ALL_STAGES: ItemStage[] = [...STUDIO_PROGRESSION, "discarded"]
 
-// Stages that require a weight input when advancing to them — Studio only
-const STUDIO_WEIGHT_STAGES = new Set<ItemStage>(["waiting glaze", "ready"])
+// Stages that require a weight input when advancing to them — Studio only.
+// Only "ready" captures a final_weight that gets deducted from the subscription.
+const STUDIO_WEIGHT_STAGES = new Set<ItemStage>(["ready"])
 
 // Ranking used to detect backward stage transitions (mirror of backend logic)
 const STAGE_ORDER: Record<Exclude<ItemStage, "discarded">, number> = {
@@ -171,9 +172,8 @@ const ItemsTable = ({
   const [editDescription, setEditDescription] = useState("")
   const [editClay, setEditClay] = useState("")
   const [editGlaze, setEditGlaze] = useState("")
-  // Weight inputs for forward stage jumps that skip past "waiting glaze" / "ready"
-  // (the Advance dialog only handles one stage at a time, so we collect them here too)
-  const [editMidWeight, setEditMidWeight] = useState("")
+  // Weight input for forward stage jumps that skip past "ready" (the Advance
+  // dialog only handles one stage at a time, so we collect it here too).
   const [editFinalWeight, setEditFinalWeight] = useState("")
   const [editSaving, setEditSaving] = useState(false)
   // Confirmation step before the actual API call fires
@@ -272,13 +272,11 @@ const ItemsTable = ({
     const nextStage = getNextStage(advanceTarget.stage, advanceTarget.section)
     if (!nextStage) return
 
-    // Build the update payload — include weight only for Studio items advancing to weigh-in stages,
-    // and glaze_type when advancing into "glaze fired" (Studio only)
+    // Build the update payload — include final_weight only when advancing to
+    // "ready" (Studio), and glaze_type when advancing into "glaze fired" (Studio).
     const body: Record<string, unknown> = { stage: nextStage }
     if (advanceTarget.section === "Studio") {
-      if (nextStage === "waiting glaze") {
-        body.mid_weight = Number(advanceWeight)
-      } else if (nextStage === "ready") {
+      if (nextStage === "ready") {
         body.final_weight = Number(advanceWeight)
       } else if (nextStage === "glaze fired" && advanceGlaze) {
         body.glaze_type = advanceGlaze
@@ -304,7 +302,6 @@ const ItemsTable = ({
     setEditDescription(item.description ?? "")
     setEditClay(item.clay_type ?? "")
     setEditGlaze(item.glaze_type ?? "")
-    setEditMidWeight("")
     setEditFinalWeight("")
   }
 
@@ -325,9 +322,8 @@ const ItemsTable = ({
         clay_type: editClay || null,
         glaze_type: editGlaze || null,
       }
-      // Include any weight that this forward stage jump crosses — the backend
-      // will deduct each one from the subscription in a single transaction.
-      if (editCrossesWaitingGlaze) body.mid_weight = Number(editMidWeight)
+      // Include final_weight if this forward stage jump crosses "ready" — the
+      // backend deducts it from the subscription in the same transaction.
       if (editCrossesReady) body.final_weight = Number(editFinalWeight)
       await onUpdateItem(editTarget.id, body)
       toast.success(t("items.updateSuccess"))
@@ -380,26 +376,19 @@ const ItemsTable = ({
     if (!editTarget || !editIsRewind || editTarget.section !== "Studio") return 0
     const currentRank = STAGE_ORDER[editTarget.stage as Exclude<ItemStage, "discarded">] ?? -1
     const newRank = editStage === "discarded" ? -1 : STAGE_ORDER[editStage]
-    let total = 0
-    if (editTarget.mid_weight != null && currentRank >= STAGE_ORDER["waiting glaze"] && newRank < STAGE_ORDER["waiting glaze"]) {
-      total += Number(editTarget.mid_weight)
-    }
     if (editTarget.final_weight != null && currentRank >= STAGE_ORDER["ready"] && newRank < STAGE_ORDER["ready"]) {
-      total += Number(editTarget.final_weight)
+      return Number(editTarget.final_weight)
     }
-    return total
+    return 0
   }, [editTarget, editIsRewind, editStage])
 
-  // Forward stage jumps in the edit dialog may skip past one or more weigh-in stages.
-  // We need to prompt for every weight (and glaze type) the new stage implies, not
-  // just the target's weight — mirrors the backend's threshold-crossing check.
-  // Each flag is suppressed when the value is already recorded on the item (e.g. an
-  // admin who rewound and re-advanced — the existing weight is still on the row).
+  // Forward stage jumps in the edit dialog may skip past "glaze fired" and/or
+  // "ready". We need to prompt for the glaze type and/or final_weight the new
+  // stage implies — mirrors the backend's threshold-crossing check. Each flag
+  // is suppressed when the value is already recorded on the item (e.g. an admin
+  // who rewound and re-advanced — the existing weight is still on the row).
   const editIsForwardJump = !!editTarget && !editIsRewind && editStage !== editTarget.stage
   const editIsStudio = editTarget?.section === "Studio"
-  const editCrossesWaitingGlaze = !!editTarget && editIsForwardJump && editIsStudio
-    && crossesStageForward(editTarget.stage, editStage, "waiting glaze")
-    && editTarget.mid_weight == null
   const editCrossesGlazeFired = !!editTarget && editIsForwardJump && editIsStudio
     && crossesStageForward(editTarget.stage, editStage, "glaze fired")
     && !editTarget.glaze_type
@@ -409,7 +398,6 @@ const ItemsTable = ({
 
   // All required-by-crossing inputs must be filled before save is allowed.
   const editValid =
-    (!editCrossesWaitingGlaze || (!!editMidWeight && Number(editMidWeight) > 0)) &&
     (!editCrossesReady || (!!editFinalWeight && Number(editFinalWeight) > 0)) &&
     (!editCrossesGlazeFired || !!editGlaze)
 
@@ -828,25 +816,9 @@ const ItemsTable = ({
                   )}
                 </div>
               )}
-              {/* Mid-weight prompt — shown when the new stage skips past "waiting glaze"
-                  for the first time. Backend deducts this from the linked subscription. */}
-              {editCrossesWaitingGlaze && (
-                <div className="grid gap-2">
-                  <Label>{t("items.midWeight")} ({t("items.weight")})</Label>
-                  <Input
-                    type="number"
-                    min="0.01"
-                    step="0.01"
-                    value={editMidWeight}
-                    onChange={(e) => setEditMidWeight(e.target.value)}
-                    placeholder={t("items.weightPlaceholder")}
-                  />
-                  <p className="text-xs text-muted-foreground">{t("items.editMidWeightPrompt")}</p>
-                </div>
-              )}
-              {/* Final-weight prompt — shown when the new stage skips past "ready" for
-                  the first time. Both weights can be required in a single update
-                  (e.g. drying → ready) and both deduct in one transaction. */}
+              {/* Final-weight prompt — shown when the new stage skips past
+                  "ready" for the first time. Backend deducts this from the
+                  linked subscription in the same transaction as the update. */}
               {editCrossesReady && (
                 <div className="grid gap-2">
                   <Label>{t("items.finalWeight")} ({t("items.weight")})</Label>
@@ -861,15 +833,10 @@ const ItemsTable = ({
                   <p className="text-xs text-muted-foreground">{t("items.editFinalWeightPrompt")}</p>
                 </div>
               )}
-              {/* Display recorded weights if they exist (Studio only — PC has no weight tracking) */}
-              {editTarget.section === "Studio" && (editTarget.mid_weight != null || editTarget.final_weight != null) && (
+              {/* Display the recorded final_weight if set (Studio only — PC has no weight tracking) */}
+              {editTarget.section === "Studio" && editTarget.final_weight != null && (
                 <div className="flex gap-4 text-sm text-muted-foreground border rounded-md p-3">
-                  {editTarget.mid_weight != null && (
-                    <span>{t("items.midWeight")}: {editTarget.mid_weight} kg</span>
-                  )}
-                  {editTarget.final_weight != null && (
-                    <span>{t("items.finalWeight")}: {editTarget.final_weight} kg</span>
-                  )}
+                  <span>{t("items.finalWeight")}: {editTarget.final_weight} kg</span>
                 </div>
               )}
             </div>

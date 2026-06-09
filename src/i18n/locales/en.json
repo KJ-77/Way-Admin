@@ -357,7 +357,20 @@
     "overrideFailed": "Failed to save override",
     "clearOverride": "Clear override",
     "templateSection": "Recurring class settings",
-    "templateHint": "Changes here apply every week going forward."
+    "templateHint": "Changes here apply every week going forward.",
+    "capacity": "Capacity",
+    "capacityPlaceholder": "e.g. 8",
+    "capacityHint": "Max headcount for this class. Optional — leave blank for no cap.",
+    "attending": "attending",
+    "backToSchedule": "Back to schedule",
+    "viewClient": "View client",
+    "noSessionsYet": "No sessions yet",
+    "noSessionsYetHint": "Be the first to book a client into this class.",
+    "classCancelledBanner": "This class is cancelled for this week.",
+    "fullyBookedBanner": "This class is marked fully booked for this week.",
+    "classNotFound": "Class not found.",
+    "invalidClassUrl": "Invalid class URL.",
+    "openClassDetail": "Open class details"
   },
   "items": {
     "title": "Items",
@@ -427,9 +440,7 @@
     "weight": "Weight (kg)",
     "weightPlaceholder": "e.g. 1.5",
     "advanceWeightPrompt": "Enter the current weight of this item to deduct from the subscription.",
-    "midWeight": "Mid Weight",
     "finalWeight": "Final Weight",
-    "editMidWeightPrompt": "This stage skip moves past \"In Progress\" — enter the mid weight to deduct from the subscription.",
     "editFinalWeightPrompt": "This stage skip moves past \"Ready for Pickup\" — enter the final weight to deduct from the subscription.",
     "editGlazeTypePrompt": "This stage skip moves past \"Glaze Firing\" — a glaze type is required."
   },

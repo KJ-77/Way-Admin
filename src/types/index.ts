@@ -120,6 +120,7 @@ export interface ScheduleSlot {
   end_time: string
   tutor_id: number | null
   package: string | null  // class type enum — also serves as the slot's display title
+  capacity: number | null  // admin-set headcount cap (informational only — not auto-enforced)
   tutor_name: string | null
   deleted_at: string | null
   created_at: string
@@ -130,6 +131,16 @@ export interface ScheduleSlot {
   is_cancelled: boolean
   cancel_reason: string | null
   override_id: number | null // null when no override exists for (slot, week)
+  attending_count: number    // sessions on this (slot, week) date with attendance booked|attended
+}
+
+// Returned by GET /schedule/:slotId/sessions?date=…
+// Powers the class-detail page — single round-trip for the slot (with override
+// merged), the date, and the joined session list.
+export interface ClassDetailResponse {
+  slot: ScheduleSlot
+  class_date: string  // YYYY-MM-DD
+  sessions: Session[]
 }
 
 // Returned by GET /schedule?week=…
@@ -161,7 +172,6 @@ export interface Item {
   description?: string | null
   clay_type?: ClayType | null
   glaze_type?: string | null
-  mid_weight: number | null
   final_weight: number | null
   created_at: string
   updated_at: string
