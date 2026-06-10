@@ -23,6 +23,10 @@ const AppHeader = () => {
     if (path === "/") return [{ label: t("nav.dashboard"), href: "/" }]
 
     const segments = path.split("/").filter(Boolean)
+    // Maps a URL slug to the i18n key holding its display label. Slugs we don't
+    // explicitly map (e.g. "items") would fall back to `t(segment)` — that's
+    // fine for plain keys but breaks for "items" because the root `items` key
+    // is an object in en.json, which i18next surfaces as an error string.
     const keyMap: Record<string, string> = {
       users: "nav.users",
       sessions: "nav.sessions",
@@ -31,6 +35,9 @@ const AppHeader = () => {
       subscriptions: "nav.subscriptions",
       tutors: "nav.tutors",
       accounts: "nav.accounts",
+      items: "nav.items",
+      "pc-items": "nav.pcItems",
+      "clay-types": "nav.clayTypes",
     }
 
     return segments.map((segment, index) => {

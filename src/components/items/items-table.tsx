@@ -322,9 +322,10 @@ const ItemsTable = ({
         clay_type: editClay || null,
         glaze_type: editGlaze || null,
       }
-      // Include final_weight if this forward stage jump crosses "ready" — the
-      // backend deducts it from the subscription in the same transaction.
-      if (editCrossesReady) body.final_weight = Number(editFinalWeight)
+      // Include final_weight if this forward stage jump crosses "ready" OR
+      // un-discards into a weighed stage with no preserved weight — the backend
+      // deducts it from the subscription in the same transaction.
+      if (editCrossesReady || editUndiscardNeedsWeight) body.final_weight = Number(editFinalWeight)
       await onUpdateItem(editTarget.id, body)
       toast.success(t("items.updateSuccess"))
       setEditTarget(null)
@@ -374,6 +375,9 @@ const ItemsTable = ({
   const editIsRewind = editTarget ? isStageBackward(editTarget.stage, editStage) : false
   const editRefundPreview = useMemo(() => {
     if (!editTarget || !editIsRewind || editTarget.section !== "Studio") return 0
+    // Coming out of "discarded" is a "rewind" by the gating function but the
+    // refund already happened — discard refunds are previewed below.
+    if (editTarget.stage === "discarded") return 0
     const currentRank = STAGE_ORDER[editTarget.stage as Exclude<ItemStage, "discarded">] ?? -1
     const newRank = editStage === "discarded" ? -1 : STAGE_ORDER[editStage]
     if (editTarget.final_weight != null && currentRank >= STAGE_ORDER["ready"] && newRank < STAGE_ORDER["ready"]) {
@@ -381,6 +385,48 @@ const ItemsTable = ({
     }
     return 0
   }, [editTarget, editIsRewind, editStage])
+
+  // ── Discard / un-discard previews (Studio only) ──
+  // Going TO "discarded" with weight still deducted → refund preview
+  const editIsDiscarding = !!editTarget && editStage === "discarded" && editTarget.stage !== "discarded"
+  const editDiscardRefundPreview = useMemo(() => {
+    if (!editTarget || !editIsDiscarding || editTarget.section !== "Studio") return 0
+    if (editTarget.final_weight == null) return 0
+    const currentRank = STAGE_ORDER[editTarget.stage as Exclude<ItemStage, "discarded">] ?? -1
+    if (currentRank < STAGE_ORDER["ready"]) return 0
+    return Number(editTarget.final_weight)
+  }, [editTarget, editIsDiscarding])
+
+  // Coming OUT of "discarded" with a preserved weight → re-deduct or clear preview
+  const editIsUndiscarding = !!editTarget && editTarget.stage === "discarded" && editStage !== "discarded"
+  const editUndiscardRededuct = useMemo(() => {
+    if (!editTarget || !editIsUndiscarding || editTarget.section !== "Studio") return 0
+    if (editTarget.final_weight == null) return 0
+    const newRank = editStage === "discarded" ? -1 : STAGE_ORDER[editStage]
+    if (newRank < STAGE_ORDER["ready"]) return 0
+    return Number(editTarget.final_weight)
+  }, [editTarget, editIsUndiscarding, editStage])
+  const editUndiscardClears = !!editTarget && editIsUndiscarding && editTarget.section === "Studio"
+    && editTarget.final_weight != null && editUndiscardRededuct === 0
+
+  // Un-discarding into a weighed stage with NO preserved weight → caller must
+  // supply a fresh final_weight, just like a regular forward cross of "ready".
+  // Mirrors backend `requiresFreshWeightOnUndiscard`.
+  const editUndiscardNeedsWeight = !!editTarget && editIsUndiscarding
+    && editTarget.section === "Studio"
+    && editTarget.final_weight == null
+    && editStage !== "discarded"
+    && STAGE_ORDER[editStage as Exclude<ItemStage, "discarded">] >= STAGE_ORDER["ready"]
+
+  // Delete-dialog refund preview — mirror of backend `shouldRefund` logic.
+  // Discarded items already had their weight refunded, so no further refund on delete.
+  const deleteRefundPreview = useMemo(() => {
+    if (!deleteTarget || deleteTarget.section !== "Studio") return 0
+    if (deleteTarget.stage === "discarded") return 0
+    if (deleteTarget.final_weight == null) return 0
+    if (deleteTarget.user_package_id == null) return 0
+    return Number(deleteTarget.final_weight)
+  }, [deleteTarget])
 
   // Forward stage jumps in the edit dialog may skip past "glaze fired" and/or
   // "ready". We need to prompt for the glaze type and/or final_weight the new
@@ -397,9 +443,13 @@ const ItemsTable = ({
     && editTarget.final_weight == null
 
   // All required-by-crossing inputs must be filled before save is allowed.
+  // `editUndiscardNeedsWeight` is treated the same as `editCrossesReady` for
+  // the purposes of UI validation — both demand a fresh final_weight before
+  // the API will accept the change.
   const editValid =
     (!editCrossesReady || (!!editFinalWeight && Number(editFinalWeight) > 0)) &&
-    (!editCrossesGlazeFired || !!editGlaze)
+    (!editCrossesGlazeFired || !!editGlaze) &&
+    (!editUndiscardNeedsWeight || (!!editFinalWeight && Number(editFinalWeight) > 0))
 
   // ── Render ──
 
@@ -760,7 +810,7 @@ const ItemsTable = ({
                 {editIsRewind && !isAdmin && (
                   <p className="text-xs text-destructive">{t("items.rewindAdminOnly")}</p>
                 )}
-                {editIsRewind && isAdmin && (
+                {editIsRewind && isAdmin && !editIsUndiscarding && (
                   <div className="text-xs text-amber-500 space-y-1">
                     <p>{t("items.rewindWarning")}</p>
                     {editRefundPreview > 0 && (
@@ -769,6 +819,23 @@ const ItemsTable = ({
                       </p>
                     )}
                   </div>
+                )}
+                {/* Discard preview — going TO "discarded" refunds the deducted weight
+                    and keeps it saved on the item for replay if un-discarded later. */}
+                {editIsDiscarding && editDiscardRefundPreview > 0 && (
+                  <p className="text-xs font-medium text-amber-500">
+                    {t("items.discardRefundNote", { amount: editDiscardRefundPreview })}
+                  </p>
+                )}
+                {/* Un-discard previews — coming OUT of "discarded" either re-deducts the
+                    saved weight (back into a weighed stage) or just clears it (pre-weighed stage). */}
+                {editIsUndiscarding && isAdmin && editUndiscardRededuct > 0 && (
+                  <p className="text-xs font-medium text-amber-500">
+                    {t("items.undiscardRedeductWarning", { amount: editUndiscardRededuct })}
+                  </p>
+                )}
+                {editIsUndiscarding && isAdmin && editUndiscardClears && (
+                  <p className="text-xs text-amber-500">{t("items.undiscardClearNote")}</p>
                 )}
               </div>
               <div className="grid gap-2">
@@ -817,9 +884,11 @@ const ItemsTable = ({
                 </div>
               )}
               {/* Final-weight prompt — shown when the new stage skips past
-                  "ready" for the first time. Backend deducts this from the
-                  linked subscription in the same transaction as the update. */}
-              {editCrossesReady && (
+                  "ready" for the first time OR when un-discarding back into a
+                  weighed stage on an item that never had a weight recorded.
+                  Backend deducts this from the linked subscription in the same
+                  transaction as the update. */}
+              {(editCrossesReady || editUndiscardNeedsWeight) && (
                 <div className="grid gap-2">
                   <Label>{t("items.finalWeight")} ({t("items.weight")})</Label>
                   <Input
@@ -830,7 +899,11 @@ const ItemsTable = ({
                     onChange={(e) => setEditFinalWeight(e.target.value)}
                     placeholder={t("items.weightPlaceholder")}
                   />
-                  <p className="text-xs text-muted-foreground">{t("items.editFinalWeightPrompt")}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {editUndiscardNeedsWeight
+                      ? t("items.undiscardWeightPrompt")
+                      : t("items.editFinalWeightPrompt")}
+                  </p>
                 </div>
               )}
               {/* Display the recorded final_weight if set (Studio only — PC has no weight tracking) */}
@@ -874,9 +947,17 @@ const ItemsTable = ({
             <DialogDescription>{t("items.deleteWarning")}</DialogDescription>
           </DialogHeader>
           {deleteTarget && (
-            <p className="text-sm text-muted-foreground">
-              {deleteTarget.user_name} — #{deleteTarget.id.toString(16).toUpperCase()} ({t(`items.stage_${deleteTarget.stage.replace(" ", "_")}`)})
-            </p>
+            <>
+              <p className="text-sm text-muted-foreground">
+                {deleteTarget.user_name} — #{deleteTarget.id.toString(16).toUpperCase()} ({t(`items.stage_${deleteTarget.stage.replace(" ", "_")}`)})
+              </p>
+              {/* Refund preview — only when delete will actually credit the subscription */}
+              {deleteRefundPreview > 0 && (
+                <p className="text-sm font-medium text-amber-500">
+                  {t("items.deleteRefundNote", { amount: deleteRefundPreview })}
+                </p>
+              )}
+            </>
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteTarget(null)} disabled={deleting}>
