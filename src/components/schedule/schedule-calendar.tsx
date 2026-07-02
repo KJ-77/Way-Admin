@@ -17,21 +17,13 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select"
 import { useSchedule, getBeirutWeekStart, addDays } from "@/hooks/use-schedule"
+import { useClassTypes } from "@/hooks/use-class-types"
 import { apiFetch } from "@/lib/api"
 import { friendlyError, ApiError } from "@/lib/errors"
 import type { ScheduleSlot, Tutor } from "@/types"
 
-// Static class type options for the schedule — must match DB enum values exactly
-const CLASS_TYPES = [
-  "hand building explorer",
-  "hand building mastery",
-  "wheel throwing explorer",
-  "open studio 1h",
-  "open studio 2h",
-  "open studio 3h",
-  "open studio membership",
-] as const
-
+// Display helper — class_type_name is already stored properly cased in the DB
+// but we still title-case as a defensive measure for legacy rows.
 function titleCase(str: string): string {
   return str.replace(/\b\w/g, c => c.toUpperCase())
 }
@@ -47,13 +39,14 @@ const DAY_SHORT_KEYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] as cons
 
 // Template-level create form (no override section — overrides are edited from
 // the class-detail page since they're per-occurrence, not per-template).
+// class_type_id is required — every slot belongs to a class (FK constraint).
 interface SlotFormData {
   day_of_week: string
   start_time: string
   end_time: string
-  tutor_id: string    // "" = no tutor
-  package: string     // "" = no package
-  capacity: string    // "" = no cap; non-empty → positive integer
+  tutor_id: string       // "" = no tutor
+  class_type_id: string  // "" = unset; must be set before submit
+  capacity: string       // "" = no cap; non-empty → positive integer
 }
 
 const emptySlotForm: SlotFormData = {
@@ -61,7 +54,7 @@ const emptySlotForm: SlotFormData = {
   start_time: "10:00",
   end_time: "12:00",
   tutor_id: "none",
-  package: "none",
+  class_type_id: "",
   capacity: "",
 }
 
@@ -108,6 +101,12 @@ const ScheduleCalendar = () => {
     goToPreviousWeek, goToNextWeek, goToCurrentWeek,
     createSlot,
   } = useSchedule()
+
+  // Class types drive the class picker on the slot form. Only active classes
+  // are offered for new slots — inactive classes stay valid on existing rows
+  // (FK persists) but shouldn't be selectable going forward.
+  const { classTypes, loading: classTypesLoading } = useClassTypes()
+  const activeClassTypes = classTypes.filter((c) => c.is_active)
 
   // Tutors fetched inline (no dedicated hook for this small lookup)
   const [tutors, setTutors] = useState<Tutor[]>([])
@@ -171,7 +170,7 @@ const ScheduleCalendar = () => {
         start_time: slotForm.start_time,
         end_time: slotForm.end_time,
         tutor_id: slotForm.tutor_id && slotForm.tutor_id !== "none" ? Number(slotForm.tutor_id) : null,
-        package: slotForm.package && slotForm.package !== "none" ? slotForm.package : null,
+        class_type_id: Number(slotForm.class_type_id),
         // Empty capacity = no cap (null); otherwise must be a positive integer.
         capacity: slotForm.capacity.trim() === "" ? null : Number(slotForm.capacity),
       }
@@ -336,7 +335,7 @@ const ScheduleCalendar = () => {
                             aria-label={t("schedule.openClassDetail")}
                           >
                             <p className="text-sm font-semibold truncate">
-                              {slot.package ? titleCase(slot.package) : t("schedule.noPackage")}
+                              {slot.class_type_name ? titleCase(slot.class_type_name) : t("schedule.noPackage")}
                             </p>
                             <p className="text-xs opacity-80 truncate">
                               {slot.tutor_name ?? t("schedule.noTutor")}
@@ -381,13 +380,16 @@ const ScheduleCalendar = () => {
 
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label>{t("schedule.package")}</Label>
-              <Select value={slotForm.package} onValueChange={val => setSlotForm(p => ({ ...p, package: val }))}>
-                <SelectTrigger><SelectValue placeholder={t("schedule.noPackage")} /></SelectTrigger>
+              <Label>{t("schedule.classType")}</Label>
+              <Select
+                value={slotForm.class_type_id}
+                onValueChange={val => setSlotForm(p => ({ ...p, class_type_id: val }))}
+                disabled={classTypesLoading}
+              >
+                <SelectTrigger><SelectValue placeholder={t("schedule.classTypePlaceholder")} /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">{t("schedule.noPackage")}</SelectItem>
-                  {CLASS_TYPES.map(ct => (
-                    <SelectItem key={ct} value={ct}>{titleCase(ct)}</SelectItem>
+                  {activeClassTypes.map(c => (
+                    <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -451,7 +453,7 @@ const ScheduleCalendar = () => {
             </Button>
             <Button
               onClick={handleCreate}
-              disabled={!slotForm.package || slotForm.package === "none" || saving}
+              disabled={!slotForm.class_type_id || saving}
             >
               {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {t("common.create")}

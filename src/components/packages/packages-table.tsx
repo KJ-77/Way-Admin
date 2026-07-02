@@ -10,14 +10,19 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
+import { Badge } from "@/components/ui/badge"
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog"
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select"
 import ConfirmDialog from "@/components/ui/confirm-dialog"
 import { friendlyError } from "@/lib/errors"
+import { useClassTypes } from "@/hooks/use-class-types"
 import type { Package } from "@/types"
 
 interface PackagesTableProps {
@@ -32,6 +37,7 @@ interface PackagesTableProps {
 
 interface FormData {
   package_type: string
+  class_type_id: string  // stored as string in form state, coerced to number on submit
   sessions_included: string
   weight_included: string
   price: string
@@ -40,6 +46,7 @@ interface FormData {
 
 const emptyForm: FormData = {
   package_type: "",
+  class_type_id: "",
   sessions_included: "",
   weight_included: "",
   price: "",
@@ -50,6 +57,12 @@ const PackagesTable = ({
   packages, loading, error, onRefetch, onCreatePackage, onUpdatePackage, onDeletePackage,
 }: PackagesTableProps) => {
   const { t } = useTranslation()
+  // Class types drive the class picker on the package form. Only active
+  // classes offered as options for new/edited packages — retired classes stay
+  // valid on existing packages (the schema doesn't drop the FK) but shouldn't
+  // be selectable going forward.
+  const { classTypes, loading: classTypesLoading } = useClassTypes()
+  const activeClassTypes = classTypes.filter((c) => c.is_active)
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
   const [editingPackage, setEditingPackage] = useState<Package | null>(null)
@@ -71,6 +84,7 @@ const PackagesTable = ({
     setEditingPackage(pkg)
     setFormData({
       package_type: pkg.package_type,
+      class_type_id: pkg.class_type_id != null ? String(pkg.class_type_id) : "",
       sessions_included: String(pkg.sessions_included ?? ""),
       weight_included: String(pkg.weight_included ?? ""),
       price: String(pkg.price ?? ""),
@@ -84,6 +98,7 @@ const PackagesTable = ({
     try {
       const body = {
         package_type: formData.package_type,
+        class_type_id: formData.class_type_id ? Number(formData.class_type_id) : null,
         sessions_included: formData.sessions_included ? Number(formData.sessions_included) : null,
         weight_included: formData.weight_included ? Number(formData.weight_included) : null,
         price: formData.price ? Number(formData.price) : null,
@@ -186,8 +201,15 @@ const PackagesTable = ({
               <CardContent className="p-5 pt-6 flex flex-col justify-between min-h-[140px]">
                 {/* Header row — name + actions */}
                 <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <h3 className="font-bold text-lg leading-snug">{pkg.package_type}</h3>
+                  <div className="flex flex-col gap-1.5 min-w-0">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <h3 className="font-bold text-lg leading-snug">{pkg.package_type}</h3>
+                    </div>
+                    {pkg.class_type_name && (
+                      <Badge variant="secondary" className="text-[10px] w-fit">
+                        {pkg.class_type_name}
+                      </Badge>
+                    )}
                     {/* Notes indicator — icon button toggles expand */}
                     {pkg.notes && (
                       <button
@@ -283,6 +305,28 @@ const PackagesTable = ({
                 placeholder="e.g. Handbuilding Explorer - 4 Sessions"
               />
             </div>
+            <div className="grid gap-2">
+              <Label>{t("packages.classType")}</Label>
+              <Select
+                value={formData.class_type_id}
+                onValueChange={(v) => setFormData(prev => ({ ...prev, class_type_id: v }))}
+                disabled={classTypesLoading}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={t("packages.classTypePlaceholder")} />
+                </SelectTrigger>
+                <SelectContent>
+                  {activeClassTypes.map((c) => (
+                    <SelectItem key={c.id} value={String(c.id)}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                {t("packages.classTypeHelp")}
+              </p>
+            </div>
             <div className="grid grid-cols-3 gap-4">
               <div className="grid gap-2">
                 <Label>{t("packages.sessionsIncluded")}</Label>
@@ -329,7 +373,7 @@ const PackagesTable = ({
             </Button>
             <Button
               onClick={editingPackage ? () => setConfirmEditOpen(true) : handleSave}
-              disabled={!formData.package_type || saving}
+              disabled={!formData.package_type || !formData.class_type_id || saving}
             >
               {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {editingPackage ? t("common.save") : t("common.create")}

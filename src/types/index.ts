@@ -3,7 +3,8 @@ export type Level = "Beginner" | "Mid" | "Advanced"
 export type Loyalty = "Low" | "Mid" | "High"
 export type ReferralSource = "Referral" | "SCM" | "Walk-In"
 export type PackageStatus = "active" | "expired" | "depleted"
-export type ClassType = "pottery" | "glass" | "canvas" | "mixed-media"
+// Legacy string-union ClassType was unused and collided with the real
+// `class_types` entity below. Removed — the interface is the source of truth.
 export type Attendance = "attended" | "booked" | "cancelled" | "cancelled - no charge"
 // Clay types are admin-managed at runtime (see /clay-types API + clay-types page).
 // Kept as a free-form string here; the UI fetches the active list dynamically.
@@ -38,10 +39,28 @@ export interface User {
   updated_at: string
 }
 
-// Product catalog — fixed package definitions offered by the studio
+// Abstract class concept. Both packages and schedule slots FK into class_types
+// so many packages/slots can share a class (e.g. 4-session and 8-session
+// Hand Building packages both point at class_type_id = <Hand Building>).
+export interface ClassType {
+  id: number
+  name: string
+  description: string | null
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+// Product catalog — fixed package definitions offered by the studio.
+// package_type is the SKU-like display label ("Hand Building - 4 Sessions").
+// class_type_id points at the abstract class this package unlocks — two
+// packages with the same class_type_id are alternative purchase options for
+// the same underlying class.
 export interface Package {
   id: number
   package_type: string
+  class_type_id: number
+  class_type_name: string  // joined via class_types
   sessions_included: number
   weight_included: number
   price: number
@@ -64,6 +83,8 @@ export interface UserPackage {
   user_name: string
   // Joined from packages table
   package_name: string
+  class_type_id: number
+  class_type_name: string
   sessions_included: number
   weight_included: number
   price: number
@@ -119,7 +140,8 @@ export interface ScheduleSlot {
   start_time: string   // "HH:MM:SS" from Postgres
   end_time: string
   tutor_id: number | null
-  package: string | null  // class type enum — also serves as the slot's display title
+  class_type_id: number  // FK → class_types.id; the class this slot is an instance of
+  class_type_name: string  // joined via class_types
   capacity: number | null  // admin-set headcount cap (informational only — not auto-enforced)
   tutor_name: string | null
   deleted_at: string | null

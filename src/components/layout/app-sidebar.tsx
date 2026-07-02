@@ -129,6 +129,19 @@ const AppSidebar = () => {
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     asChild
+                    isActive={isActive("/class-types")}
+                    tooltip={t("nav.classTypes")}
+                    className="transition-all duration-200"
+                  >
+                    <Link to="/class-types">
+                      <GraduationCap className="h-4 w-4" />
+                      <span>{t("nav.classTypes")}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
                     isActive={isActive("/clay-types")}
                     tooltip={t("nav.clayTypes")}
                     className="transition-all duration-200"

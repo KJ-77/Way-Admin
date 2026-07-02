@@ -83,7 +83,7 @@ const WeeklyCalendar = () => {
                       {slot && (
                         <div
                           className="w-full h-6 rounded-sm bg-primary/60"
-                          title={`${slot.package ? titleCase(slot.package) : "—"}\n${slot.tutor_name ?? t("schedule.noTutor")}\n${time}`}
+                          title={`${slot.class_type_name ? titleCase(slot.class_type_name) : "—"}\n${slot.tutor_name ?? t("schedule.noTutor")}\n${time}`}
                         />
                       )}
                     </div>
