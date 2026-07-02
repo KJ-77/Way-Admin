@@ -65,6 +65,8 @@ const AppSidebar = () => {
     { title: t("nav.users"), url: "/users", icon: Users },
     { title: t("nav.sessions"), url: "/sessions", icon: CalendarDays },
     { title: t("nav.schedule"), url: "/schedule", icon: CalendarClock },
+    // class_types sits with packages/schedule since it's the parent both point at
+    { title: t("nav.classTypes"), url: "/class-types", icon: GraduationCap },
     { title: t("nav.packages"), url: "/packages", icon: Package },
     { title: t("nav.subscriptions"), url: "/subscriptions", icon: ScrollText },
     { title: t("nav.tutors"), url: "/tutors", icon: GraduationCap },
