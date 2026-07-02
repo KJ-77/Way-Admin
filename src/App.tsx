@@ -17,6 +17,8 @@ import ClassDetailPage from "@/pages/class-detail"
 import ItemsPage from "@/pages/items"
 import PcItemsPage from "@/pages/pc-items"
 import ClayTypesPage from "@/pages/clay-types"
+import ClassTypesPage from "@/pages/class-types"
+import ClassTypeDetailPage from "@/pages/class-type-detail"
 import AccountsPage from "@/pages/accounts"
 import UserDetailPage from "@/pages/user-detail"
 import NotFound from "@/pages/not-found"
@@ -51,6 +53,22 @@ const App = () => {
                           element={
                             <ProtectedRoute allowedRoles={["admin"]}>
                               <ClayTypesPage />
+                            </ProtectedRoute>
+                          }
+                        />
+                        <Route
+                          path="/class-types"
+                          element={
+                            <ProtectedRoute allowedRoles={["admin", "studio-manager"]}>
+                              <ClassTypesPage />
+                            </ProtectedRoute>
+                          }
+                        />
+                        <Route
+                          path="/class-types/:id"
+                          element={
+                            <ProtectedRoute allowedRoles={["admin", "studio-manager"]}>
+                              <ClassTypeDetailPage />
                             </ProtectedRoute>
                           }
                         />

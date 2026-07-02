@@ -402,7 +402,9 @@ const ItemsTable = ({
   const editUndiscardRededuct = useMemo(() => {
     if (!editTarget || !editIsUndiscarding || editTarget.section !== "Studio") return 0
     if (editTarget.final_weight == null) return 0
-    const newRank = editStage === "discarded" ? -1 : STAGE_ORDER[editStage]
+    // editIsUndiscarding already narrows editStage away from "discarded", so
+    // the lookup into STAGE_ORDER (which excludes "discarded") is safe.
+    const newRank = STAGE_ORDER[editStage as Exclude<ItemStage, "discarded">]
     if (newRank < STAGE_ORDER["ready"]) return 0
     return Number(editTarget.final_weight)
   }, [editTarget, editIsUndiscarding, editStage])
@@ -412,10 +414,10 @@ const ItemsTable = ({
   // Un-discarding into a weighed stage with NO preserved weight → caller must
   // supply a fresh final_weight, just like a regular forward cross of "ready".
   // Mirrors backend `requiresFreshWeightOnUndiscard`.
+  // editIsUndiscarding already narrows editStage away from "discarded".
   const editUndiscardNeedsWeight = !!editTarget && editIsUndiscarding
     && editTarget.section === "Studio"
     && editTarget.final_weight == null
-    && editStage !== "discarded"
     && STAGE_ORDER[editStage as Exclude<ItemStage, "discarded">] >= STAGE_ORDER["ready"]
 
   // Delete-dialog refund preview — mirror of backend `shouldRefund` logic.

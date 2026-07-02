@@ -27,24 +27,13 @@ import {
 import ConfirmDialog from "@/components/ui/confirm-dialog"
 import UserCombobox from "@/components/ui/user-combobox"
 import { useClassDetail } from "@/hooks/use-class-detail"
+import { useClassTypes } from "@/hooks/use-class-types"
 import { apiFetch } from "@/lib/api"
 import { friendlyError, throwIfNotOk, ApiError } from "@/lib/errors"
 import type {
   ScheduleSlot, Tutor, User, UserPackage, Attendance, Session,
   UpsertOverridePayload,
 } from "@/types"
-
-// Class type options — must match DB enum values exactly (duplicated from
-// schedule-calendar so each page stays self-contained).
-const CLASS_TYPES = [
-  "hand building explorer",
-  "hand building mastery",
-  "wheel throwing explorer",
-  "open studio 1h",
-  "open studio 2h",
-  "open studio 3h",
-  "open studio membership",
-] as const
 
 const DAY_KEYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"] as const
 
@@ -80,7 +69,7 @@ interface SlotFormData {
   start_time: string
   end_time: string
   tutor_id: string
-  package: string
+  class_type_id: string  // "" = unset; must be set before submit
   capacity: string  // stored as string for input compatibility; "" = no capacity
 }
 
@@ -120,6 +109,12 @@ const ClassDetail = () => {
     paramsValid ? slotId : 0,
     paramsValid ? classDate! : "",
   )
+
+  // Class picker options for the edit dialog. Only active classes are offered
+  // for edits — retired classes stay valid on the currently-loaded slot but
+  // shouldn't be a new choice.
+  const { classTypes, loading: classTypesLoading } = useClassTypes()
+  const activeClassTypes = classTypes.filter((c) => c.is_active)
 
   // Inlined slot/override mutations — we don't pull useSchedule here because
   // it would fire an extra week-of-slots fetch on mount that we'd never read.
@@ -166,7 +161,7 @@ const ClassDetail = () => {
     start_time: "10:00",
     end_time: "12:00",
     tutor_id: "none",
-    package: "none",
+    class_type_id: "",
     capacity: "",
   })
   const [overrideForm, setOverrideForm] = useState<OverrideFormData>({
@@ -205,7 +200,7 @@ const ClassDetail = () => {
       start_time: formatTime(slot.start_time),
       end_time: formatTime(slot.end_time),
       tutor_id: slot.tutor_id != null ? String(slot.tutor_id) : "none",
-      package: slot.package ?? "none",
+      class_type_id: slot.class_type_id != null ? String(slot.class_type_id) : "",
       capacity: slot.capacity != null ? String(slot.capacity) : "",
     })
     setOverrideForm({
@@ -232,7 +227,7 @@ const ClassDetail = () => {
         start_time: slotForm.start_time,
         end_time: slotForm.end_time,
         tutor_id: slotForm.tutor_id && slotForm.tutor_id !== "none" ? Number(slotForm.tutor_id) : null,
-        package: slotForm.package && slotForm.package !== "none" ? slotForm.package : null,
+        class_type_id: Number(slotForm.class_type_id),
         capacity: slotForm.capacity.trim() === "" ? null : Number(slotForm.capacity),
       }
       await updateSlot(data.slot.id, body)
@@ -450,7 +445,7 @@ const ClassDetail = () => {
   }
 
   const { slot, sessions } = data
-  const className = slot.package ? titleCase(slot.package) : t("schedule.noPackage")
+  const className = slot.class_type_name ? titleCase(slot.class_type_name) : t("schedule.noPackage")
   const capacityLabel = slot.capacity != null
     ? `${slot.attending_count} / ${slot.capacity}`
     : `${slot.attending_count}`
@@ -600,13 +595,16 @@ const ClassDetail = () => {
               </div>
 
               <div className="grid gap-2">
-                <Label>{t("schedule.package")}</Label>
-                <Select value={slotForm.package} onValueChange={val => setSlotForm(p => ({ ...p, package: val }))}>
-                  <SelectTrigger><SelectValue placeholder={t("schedule.noPackage")} /></SelectTrigger>
+                <Label>{t("schedule.classType")}</Label>
+                <Select
+                  value={slotForm.class_type_id}
+                  onValueChange={val => setSlotForm(p => ({ ...p, class_type_id: val }))}
+                  disabled={classTypesLoading}
+                >
+                  <SelectTrigger><SelectValue placeholder={t("schedule.classTypePlaceholder")} /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">{t("schedule.noPackage")}</SelectItem>
-                    {CLASS_TYPES.map(ct => (
-                      <SelectItem key={ct} value={ct}>{titleCase(ct)}</SelectItem>
+                    {activeClassTypes.map(c => (
+                      <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -670,7 +668,7 @@ const ClassDetail = () => {
                 </Button>
                 <Button
                   onClick={() => setConfirmTemplateOpen(true)}
-                  disabled={!slotForm.package || slotForm.package === "none" || savingTemplate}
+                  disabled={!slotForm.class_type_id || savingTemplate}
                 >
                   {savingTemplate && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   {t("common.save")}

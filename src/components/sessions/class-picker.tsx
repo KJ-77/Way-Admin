@@ -180,11 +180,12 @@ const ClassPicker = ({ classDate, scheduleSlotId, onChange }: ClassPickerProps) 
             </SelectTrigger>
             <SelectContent>
               {availableSlots.map(slot => {
-                // Display "Wheel Throwing Explorer • 10:00–12:00" — package can
-                // be null for slots configured without a class type, in which
-                // case we fall back to the tutor name or "Open Slot."
-                const name = slot.package
-                  ? titleCase(slot.package)
+                // Display "Wheel Throwing Explorer • 10:00–12:00" — class name
+                // comes from the class_types join. Falls back to the tutor
+                // name or "Open Slot" if for some reason the class join is
+                // missing (shouldn't happen post-migration).
+                const name = slot.class_type_name
+                  ? titleCase(slot.class_type_name)
                   : slot.tutor_name ?? "Open Slot"
                 const time = `${trimSeconds(slot.start_time)}–${trimSeconds(slot.end_time)}`
                 return (

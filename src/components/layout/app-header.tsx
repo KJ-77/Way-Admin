@@ -38,6 +38,7 @@ const AppHeader = () => {
       items: "nav.items",
       "pc-items": "nav.pcItems",
       "clay-types": "nav.clayTypes",
+      "class-types": "nav.classTypes",
     }
 
     return segments.map((segment, index) => {
