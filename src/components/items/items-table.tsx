@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react"
 import { useTranslation } from "react-i18next"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, useSearchParams } from "react-router-dom"
 import { toast } from "sonner"
 import {
   Plus, Search, MoreHorizontal, Loader2, AlertCircle,
@@ -136,6 +136,7 @@ const ItemsTable = ({
 }: ItemsTableProps) => {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { user } = useAuth()
   const isAdmin = user?.groups.includes("admin") ?? false
 
@@ -143,8 +144,10 @@ const ItemsTable = ({
   const { clayTypes } = useClayTypes()
 
   // ── State ──
-  // This page is Studio-only — PC items have their own page (/pc-items)
-  const [search, setSearch] = useState("")
+  // This page is Studio-only — PC items have their own page (/pc-items).
+  // Search is seeded from `?search=` so deep-links from the user-detail items
+  // widget land with a specific item pre-filtered.
+  const [search, setSearch] = useState(() => searchParams.get("search") ?? "")
   const [stageFilter, setStageFilter] = useState<string>("all")
   const [sortBy, setSortBy] = useState<SortOption>("id")
 

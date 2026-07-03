@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next"
+import { useNavigate } from "react-router-dom"
 import { Loader2, Shapes } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -21,6 +22,15 @@ interface UserDetailItemsProps {
 
 const UserDetailItems = ({ items, loading }: UserDetailItemsProps) => {
   const { t } = useTranslation()
+  const navigate = useNavigate()
+
+  // Clicking a row jumps to the appropriate items page with the item's hex id
+  // prefilled in the search — /items filters Studio-only, /pc-items filters PC-only.
+  const handleItemClick = (item: Item) => {
+    const hexId = item.id.toString(16).toUpperCase()
+    const path = item.section === "PC" ? "/pc-items" : "/items"
+    navigate(`${path}?search=${encodeURIComponent(hexId)}`)
+  }
 
   return (
     <Card>
@@ -45,7 +55,11 @@ const UserDetailItems = ({ items, loading }: UserDetailItemsProps) => {
             {items.map((item) => (
               <div
                 key={item.id}
-                className="flex items-center justify-between rounded-lg border p-3"
+                role="button"
+                tabIndex={0}
+                onClick={() => handleItemClick(item)}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleItemClick(item) } }}
+                className="flex items-center justify-between rounded-lg border p-3 cursor-pointer hover:bg-muted/50 transition-colors"
               >
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">

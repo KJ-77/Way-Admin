@@ -26,6 +26,7 @@
       "DOW_MISMATCH": "The chosen date doesn't fall on the day this class is scheduled.",
       "CLASS_CANCELLED": "This class is cancelled for that week. Choose a different week or class.",
       "PAST_BOOKING": "You can't book a class in the past. Pick today or a future date.",
+      "DUPLICATE_BOOKING": "This client already has a booking for this class. Cancel the existing booking first.",
       "SELF_ROLE_CHANGE": "You can't change your own role. Ask another admin to do it.",
       "SELF_DELETE": "You can't delete your own account. Ask another admin to do it."
     },
@@ -175,7 +176,7 @@
     "deleteFailed": "Failed to delete session",
     "operationFailed": "Operation failed",
     "deleteConfirm": "Delete Session",
-    "deleteWarning": "Are you sure? This will permanently remove this session record. The subscription's remaining sessions/weight will NOT be restored.",
+    "deleteWarning": "Are you sure? This will permanently remove this session record. The subscription's remaining sessions/weight will be restored.",
     "totalSessions": "Total Sessions",
     "attendedSessions": "Attended",
     "bookedSessions": "Booked",

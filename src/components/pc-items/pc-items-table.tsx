@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react"
 import { useTranslation } from "react-i18next"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, useSearchParams } from "react-router-dom"
 import { toast } from "sonner"
 import {
   Plus, Search, MoreHorizontal, Loader2, AlertCircle,
@@ -100,11 +100,14 @@ const PcItemsTable = ({
 }: PcItemsTableProps) => {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { user } = useAuth()
   const isAdmin = user?.groups.includes("admin") ?? false
 
   // ── State ──
-  const [search, setSearch] = useState("")
+  // Search seeded from `?search=` so deep-links from the user-detail items
+  // widget land with a specific PC item pre-filtered.
+  const [search, setSearch] = useState(() => searchParams.get("search") ?? "")
   const [stageFilter, setStageFilter] = useState<string>("all")
   const [sortBy, setSortBy] = useState<SortOption>("id")
 
