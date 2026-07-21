@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, useSearchParams } from "react-router-dom"
 import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 import {
   Search, MoreHorizontal, CalendarPlus, Pencil, Trash2,
-  Loader2, AlertCircle,
+  Loader2, AlertCircle, X,
 } from "lucide-react"
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -122,6 +122,11 @@ const SessionsTable = ({
 }: SessionsTableProps) => {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  // Deep-link focus: when the user clicks a session in a client's detail widget we
+  // land here with ?focus=<id> and narrow the table to that single row.
+  const focusId = searchParams.get("focus")
 
   // Filters
   const [search, setSearch] = useState("")
@@ -171,9 +176,30 @@ const SessionsTable = ({
     return () => { cancelled = true }
   }, [createForm.user_id])
 
+  // Auto-open the create dialog when arriving from a dashboard quick action (?new=1),
+  // then strip the flag so a refresh/back doesn't re-trigger it.
+  useEffect(() => {
+    if (searchParams.get("new") !== "1") return
+    setCreateForm(emptyCreateForm)
+    setUserSubscriptions([])
+    setIsCreateOpen(true)
+    const next = new URLSearchParams(searchParams)
+    next.delete("new")
+    setSearchParams(next, { replace: true })
+  }, [searchParams, setSearchParams])
+
+  // Drops the ?focus= deep-link and returns the table to the full list.
+  const clearFocus = () => {
+    const next = new URLSearchParams(searchParams)
+    next.delete("focus")
+    setSearchParams(next, { replace: true })
+  }
+
   // ── Filtering ──
 
   const filtered = sessions.filter(session => {
+    // Focus deep-link wins over the free-text/attendance filters — show only that row.
+    if (focusId) return String(session.id) === focusId
     const matchesSearch =
       session.user_name.toLowerCase().includes(search.toLowerCase()) ||
       session.package_name.toLowerCase().includes(search.toLowerCase())
@@ -298,9 +324,10 @@ const SessionsTable = ({
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="ps-8"
+                disabled={!!focusId}
               />
             </div>
-            <Select value={attendanceFilter} onValueChange={(v) => setAttendanceFilter(v as Attendance | "all")}>
+            <Select value={attendanceFilter} onValueChange={(v) => setAttendanceFilter(v as Attendance | "all")} disabled={!!focusId}>
               <SelectTrigger className="w-[200px]">
                 <SelectValue placeholder={t("sessions.allAttendance")} />
               </SelectTrigger>
@@ -313,6 +340,17 @@ const SessionsTable = ({
               </SelectContent>
             </Select>
           </div>
+
+          {/* Deep-link banner — shown when focused on a single session from a client's page */}
+          {focusId && (
+            <div className="mb-4 flex items-center justify-between gap-3 rounded-md border border-primary/30 bg-primary/5 px-3 py-2">
+              <span className="text-sm text-muted-foreground">{t("sessions.focusedBanner")}</span>
+              <Button variant="ghost" size="sm" className="h-7 gap-1.5" onClick={clearFocus}>
+                <X className="h-3.5 w-3.5" />
+                {t("sessions.showAll")}
+              </Button>
+            </div>
+          )}
 
           {/* Content: error / loading / table */}
           {error ? (

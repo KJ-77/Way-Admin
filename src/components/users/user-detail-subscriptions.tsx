@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom"
 import { Package } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -17,6 +18,14 @@ const statusColors: Record<string, string> = {
 }
 
 const UserDetailSubscriptions = ({ subscriptions, loading }: UserDetailSubscriptionsProps) => {
+  const navigate = useNavigate()
+
+  // Clicking a card jumps to the Subscriptions page with this subscription focused
+  // (deep-link via ?focus=<id>). Mirrors the sessions + items widgets.
+  const handleSubscriptionClick = (sub: UserPackage) => {
+    navigate(`/subscriptions?focus=${sub.id}`)
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -51,7 +60,14 @@ const UserDetailSubscriptions = ({ subscriptions, loading }: UserDetailSubscript
                 : 0
 
               return (
-                <div key={sub.id} className="rounded-lg border p-3 space-y-2">
+                <div
+                  key={sub.id}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => handleSubscriptionClick(sub)}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleSubscriptionClick(sub) } }}
+                  className="rounded-lg border p-3 space-y-2 cursor-pointer hover:bg-muted/50 transition-colors"
+                >
                   <div className="flex items-center justify-between">
                     <p className="text-sm font-medium truncate">{sub.package_name}</p>
                     <Badge variant="outline" className={statusColors[sub.status]}>

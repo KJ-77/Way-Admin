@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom"
 import { Clock } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -28,6 +29,15 @@ const formatClassDate = (isoOrYmd: string) => {
 }
 
 const UserDetailSessions = ({ sessions, loading }: UserDetailSessionsProps) => {
+  const navigate = useNavigate()
+
+  // Clicking a row jumps to the Sessions page with this session focused (deep-link
+  // via ?focus=<id> — the sessions table narrows to just this row + shows a "show all"
+  // banner). Same idea as the items widget, but keyed on the session's DB id.
+  const handleSessionClick = (session: Session) => {
+    navigate(`/sessions?focus=${session.id}`)
+  }
+
   return (
     <Card className="lg:col-span-2">
       <CardHeader>
@@ -67,7 +77,11 @@ const UserDetailSessions = ({ sessions, loading }: UserDetailSessionsProps) => {
               return (
                 <div
                   key={session.id}
-                  className="flex items-center gap-4 rounded-lg border p-3"
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => handleSessionClick(session)}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleSessionClick(session) } }}
+                  className="flex items-center gap-4 rounded-lg border p-3 cursor-pointer hover:bg-muted/50 transition-colors"
                 >
                   {/* Session number badge */}
                   <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">

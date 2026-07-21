@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
 import { toast } from "sonner"
 import {
-  Plus, Loader2, AlertCircle, CalendarX, ChevronLeft, ChevronRight, Ban, Users,
+  Plus, Loader2, AlertCircle, CalendarX, ChevronLeft, ChevronRight, Ban, Users, Download,
 } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -20,6 +20,7 @@ import { useSchedule, getBeirutWeekStart, addDays } from "@/hooks/use-schedule"
 import { useClassTypes } from "@/hooks/use-class-types"
 import { apiFetch } from "@/lib/api"
 import { friendlyError, ApiError } from "@/lib/errors"
+import { exportScheduleToPdf } from "@/lib/schedule-pdf"
 import type { ScheduleSlot, Tutor } from "@/types"
 
 // Display helper — class_type_name is already stored properly cased in the DB
@@ -162,6 +163,12 @@ const ScheduleCalendar = () => {
     setIsCreateOpen(true)
   }, [])
 
+  // Export the currently-viewed week to a print-ready PDF (native browser print dialog).
+  const handleExportPdf = useCallback(() => {
+    const ok = exportScheduleToPdf(weekStart, slots)
+    if (!ok) toast.error(t("schedule.exportBlocked"))
+  }, [weekStart, slots, t])
+
   const handleCreate = async () => {
     setSaving(true)
     try {
@@ -242,6 +249,10 @@ const ScheduleCalendar = () => {
               {t("schedule.thisWeek")}
             </Button>
           )}
+          <Button variant="outline" onClick={handleExportPdf}>
+            <Download className="me-1 h-4 w-4" />
+            {t("schedule.exportPdf")}
+          </Button>
           <Button onClick={openCreate}>
             <Plus className="me-1 h-4 w-4" />
             {t("schedule.addSlot")}

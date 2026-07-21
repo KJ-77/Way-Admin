@@ -1,10 +1,10 @@
-import { useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { useState, useEffect } from "react"
+import { useNavigate, useSearchParams } from "react-router-dom"
 import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 import {
   Search, MoreHorizontal, PackagePlus, Pencil, Trash2,
-  Loader2, AlertCircle, AlertTriangle, Package as PackageIcon, CalendarPlus,
+  Loader2, AlertCircle, AlertTriangle, Package as PackageIcon, CalendarPlus, X,
 } from "lucide-react"
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -78,6 +78,11 @@ const SubscriptionsTable = ({
 }: SubscriptionsTableProps) => {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  // Deep-link focus: clicking a subscription in a client's detail widget lands here
+  // with ?focus=<id>, narrowing the table to that single row.
+  const focusId = searchParams.get("focus")
 
   // Filters
   const [search, setSearch] = useState("")
@@ -107,9 +112,29 @@ const SubscriptionsTable = ({
   const [sessionSlotId, setSessionSlotId] = useState("")
   const [savingSession, setSavingSession] = useState(false)
 
+  // Auto-open the create dialog when arriving from a dashboard quick action (?new=1),
+  // then strip the flag so a refresh/back doesn't re-trigger it.
+  useEffect(() => {
+    if (searchParams.get("new") !== "1") return
+    setCreateForm(emptyCreateForm)
+    setIsCreateOpen(true)
+    const next = new URLSearchParams(searchParams)
+    next.delete("new")
+    setSearchParams(next, { replace: true })
+  }, [searchParams, setSearchParams])
+
+  // Drops the ?focus= deep-link and returns the table to the full list.
+  const clearFocus = () => {
+    const next = new URLSearchParams(searchParams)
+    next.delete("focus")
+    setSearchParams(next, { replace: true })
+  }
+
   // ── Filtering ──
 
   const filtered = subscriptions.filter(sub => {
+    // Focus deep-link wins over the free-text/status filters — show only that row.
+    if (focusId) return String(sub.id) === focusId
     const matchesSearch = sub.user_name.toLowerCase().includes(search.toLowerCase())
     const matchesStatus = statusFilter === "all" || sub.status === statusFilter
     return matchesSearch && matchesStatus
@@ -257,9 +282,10 @@ const SubscriptionsTable = ({
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="ps-8"
+                disabled={!!focusId}
               />
             </div>
-            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as PackageStatus | "all")}>
+            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as PackageStatus | "all")} disabled={!!focusId}>
               <SelectTrigger className="w-[140px]">
                 <SelectValue placeholder={t("subscriptions.allStatuses")} />
               </SelectTrigger>
@@ -271,6 +297,17 @@ const SubscriptionsTable = ({
               </SelectContent>
             </Select>
           </div>
+
+          {/* Deep-link banner — shown when focused on a single subscription from a client's page */}
+          {focusId && (
+            <div className="mb-4 flex items-center justify-between gap-3 rounded-md border border-primary/30 bg-primary/5 px-3 py-2">
+              <span className="text-sm text-muted-foreground">{t("subscriptions.focusedBanner")}</span>
+              <Button variant="ghost" size="sm" className="h-7 gap-1.5" onClick={clearFocus}>
+                <X className="h-3.5 w-3.5" />
+                {t("subscriptions.showAll")}
+              </Button>
+            </div>
+          )}
 
           {/* Content: error / loading / empty / table */}
           {error ? (

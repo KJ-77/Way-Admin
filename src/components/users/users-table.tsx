@@ -1,5 +1,5 @@
-import { useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { useState, useEffect } from "react"
+import { useNavigate, useSearchParams } from "react-router-dom"
 import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 import {
@@ -62,6 +62,7 @@ const UsersTable = ({
 }: UsersTableProps) => {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [search, setSearch] = useState("")
   const [isAddOpen, setIsAddOpen] = useState(false)
   const [levelFilter, setLevelFilter] = useState<Level | "all">("all")
@@ -72,6 +73,17 @@ const UsersTable = ({
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null)
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
   const [deleting, setDeleting] = useState(false)
+
+  // Auto-open the add-client dialog when arriving from a dashboard quick action (?new=1),
+  // then strip the flag so a refresh/back doesn't re-trigger it.
+  useEffect(() => {
+    if (searchParams.get("new") !== "1") return
+    setEditTarget(null)
+    setIsAddOpen(true)
+    const next = new URLSearchParams(searchParams)
+    next.delete("new")
+    setSearchParams(next, { replace: true })
+  }, [searchParams, setSearchParams])
 
   const filteredUsers = users.filter(user => {
     const matchesSearch = user.full_name.toLowerCase().includes(search.toLowerCase()) ||
