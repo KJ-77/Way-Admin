@@ -98,6 +98,16 @@ const emptySessionForm: SessionFormData = {
 const ClassDetail = () => {
   const { t } = useTranslation()
   const navigate = useNavigate()
+
+  // Toast sub-line describing what a cancel/delete/un-cancel did to client
+  // balances. Returns undefined when nothing moved, so the toast stays clean
+  // for the common case (a class nobody had booked yet).
+  const refundDescription = useCallback((refunded: number, restored: number) => {
+    if (refunded > 0) return t("schedule.sessionsRefunded", { count: refunded })
+    if (restored > 0) return t("schedule.sessionsRestored", { count: restored })
+    return undefined
+  }, [t])
+
   const { slotId: slotIdParam, classDate } = useParams<{ slotId: string; classDate: string }>()
   const slotId = Number(slotIdParam)
 
@@ -122,22 +132,34 @@ const ClassDetail = () => {
     const res = await apiFetch(`/schedule/${id}`, { method: "PUT", body: JSON.stringify(body) })
     await throwIfNotOk(res, "Failed to update slot")
   }, [])
-  const deleteSlot = useCallback(async (id: number) => {
+  // Cancelling or deleting a class refunds every client booked into it (and
+  // un-cancelling puts those sessions back). The API reports how many were
+  // affected so we can tell staff rather than moving balances silently.
+  const deleteSlot = useCallback(async (id: number): Promise<{ refunded: number }> => {
     const res = await apiFetch(`/schedule/${id}`, { method: "DELETE" })
     await throwIfNotOk(res, "Failed to delete slot")
+    return res.json()
   }, [])
-  const upsertOverride = useCallback(async (slotId: number, payload: UpsertOverridePayload) => {
+  const upsertOverride = useCallback(async (
+    slotId: number,
+    payload: UpsertOverridePayload,
+  ): Promise<{ refunded: number; restored: number }> => {
     const res = await apiFetch(`/schedule/${slotId}/override`, {
       method: "PUT",
       body: JSON.stringify(payload),
     })
     await throwIfNotOk(res, "Failed to update override")
+    return res.json()
   }, [])
-  const clearOverride = useCallback(async (slotId: number, week: string) => {
+  const clearOverride = useCallback(async (
+    slotId: number,
+    week: string,
+  ): Promise<{ restored: number }> => {
     const res = await apiFetch(`/schedule/${slotId}/override?week=${week}`, { method: "DELETE" })
     // 404 = no override existed → treat as success (idempotent clear)
-    if (res.status === 404) return
+    if (res.status === 404) return { restored: 0 }
     await throwIfNotOk(res, "Failed to clear override")
+    return res.json()
   }, [])
 
   // Tutors for the edit dialog dropdown. Fetched once on mount.
@@ -250,14 +272,16 @@ const ClassDetail = () => {
     if (!data) return
     setSavingOverride(true)
     try {
-      await upsertOverride(data.slot.id, {
+      const { refunded, restored } = await upsertOverride(data.slot.id, {
         week_start: data.slot.week_start,
         is_fully_booked: overrideForm.is_fully_booked,
         is_cancelled: overrideForm.is_cancelled,
         cancel_reason: overrideForm.cancel_reason.trim() || null,
       })
       const wasCleared = !overrideForm.is_fully_booked && !overrideForm.is_cancelled
-      toast.success(wasCleared ? t("schedule.overrideCleared") : t("schedule.overrideSaved"))
+      toast.success(wasCleared ? t("schedule.overrideCleared") : t("schedule.overrideSaved"), {
+        description: refundDescription(refunded, restored),
+      })
       setIsEditOpen(false)
       setConfirmOverrideOpen(false)
       refetch()
@@ -272,8 +296,10 @@ const ClassDetail = () => {
     if (!data) return
     setSavingOverride(true)
     try {
-      await clearOverride(data.slot.id, data.slot.week_start)
-      toast.success(t("schedule.overrideCleared"))
+      const { restored } = await clearOverride(data.slot.id, data.slot.week_start)
+      toast.success(t("schedule.overrideCleared"), {
+        description: refundDescription(0, restored),
+      })
       setIsEditOpen(false)
       setConfirmClearOverrideOpen(false)
       refetch()
@@ -288,8 +314,10 @@ const ClassDetail = () => {
     if (!data) return
     setDeletingSlot(true)
     try {
-      await deleteSlot(data.slot.id)
-      toast.success(t("schedule.deleteSuccess"))
+      const { refunded } = await deleteSlot(data.slot.id)
+      toast.success(t("schedule.deleteSuccess"), {
+        description: refundDescription(refunded, 0),
+      })
       setIsDeleteSlotOpen(false)
       // Slot is gone — bounce back to the weekly schedule.
       navigate("/schedule")
@@ -693,12 +721,17 @@ const ClassDetail = () => {
                 />
               </div>
 
-              <div className="flex items-center justify-between rounded-md border p-3">
-                <Label className="text-sm">{t("schedule.cancelForWeek")}</Label>
-                <Switch
-                  checked={overrideForm.is_cancelled}
-                  onCheckedChange={val => setOverrideForm(p => ({ ...p, is_cancelled: val }))}
-                />
+              {/* Cancelling moves client balances, so the consequence is stated
+                  inline on the toggle rather than only after the fact. */}
+              <div className="rounded-md border p-3 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm">{t("schedule.cancelForWeek")}</Label>
+                  <Switch
+                    checked={overrideForm.is_cancelled}
+                    onCheckedChange={val => setOverrideForm(p => ({ ...p, is_cancelled: val }))}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">{t("schedule.cancelRefundHint")}</p>
               </div>
 
               {overrideForm.is_cancelled && (
