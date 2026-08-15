@@ -10,7 +10,7 @@
       "PHONE_TAKEN": "This phone number is already registered to another client.",
       "EMAIL_TAKEN": "This email is already in use by another client.",
       "DUPLICATE": "This entry already exists.",
-      "FK_VIOLATION": "This can't be deleted while {{blocker}} are still linked to it. Remove or reassign them first, then try again.",
+      "FK_VIOLATION": "This can't be deleted while “{{blocker}}” are still linked to it. Remove or reassign them first, then try again.",
       "SCHEDULE_CONFLICT": "Another class is already scheduled during this time slot.",
       "USERNAME_EXISTS": "This account already exists.",
       "USER_NOT_FOUND": "We couldn't find that account.",

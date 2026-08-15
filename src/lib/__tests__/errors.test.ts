@@ -11,7 +11,7 @@ vi.mock("@/i18n", () => ({
         "errors.network": "Network failure.",
         "errors.codes.PHONE_TAKEN": "Phone is taken.",
         "errors.codes.EMAIL_TAKEN": "Email is taken.",
-        "errors.codes.FK_VIOLATION": "Can't delete while {{blocker}} are linked.",
+        "errors.codes.FK_VIOLATION": "Can't delete while “{{blocker}}” are linked.",
         "errors.fk.generic": "other records",
         "errors.fk.tables.sessions": "booked sessions",
         "errors.fk.tables.user_packages": "subscriptions",
@@ -163,7 +163,7 @@ describe("friendlyError", () => {
       constraint: "sessions_user_package_id_fkey",
       detail: 'Key (id)=(42) is still referenced from table "sessions".',
     })
-    expect(friendlyError(err)).toBe("Can't delete while booked sessions are linked.")
+    expect(friendlyError(err)).toBe("Can't delete while “booked sessions” are linked.")
   })
 
   it("derives the table for relationships with no hand-written label", () => {
@@ -176,7 +176,7 @@ describe("friendlyError", () => {
       constraint: "items_clay_type_id_fkey",
       detail: 'Key (id)=(7) is still referenced from table "items".',
     })
-    expect(friendlyError(err)).toBe("Can't delete while items are linked.")
+    expect(friendlyError(err)).toBe("Can't delete while “items” are linked.")
   })
 
   it("does NOT reuse another relationship's label — a different FK names its own table", () => {
@@ -202,7 +202,7 @@ describe("friendlyError", () => {
       constraint: "packages_class_type_id_fkey",
       detail: 'Key (id)=(3) is still referenced from table "class_types".',
     })
-    expect(friendlyError(err)).toBe("Can't delete while class types are linked.")
+    expect(friendlyError(err)).toBe("Can't delete while “class types” are linked.")
   })
 
   it("prefers the table label over the raw table name", () => {
@@ -214,7 +214,7 @@ describe("friendlyError", () => {
       constraint: "user_packages_package_id_fkey",
       detail: 'Key (id)=(3) is still referenced from table "user_packages".',
     })
-    expect(friendlyError(err)).toBe("Can't delete while subscriptions are linked.")
+    expect(friendlyError(err)).toBe("Can't delete while “subscriptions” are linked.")
   })
 
   it("resolves the label from the table, so any FK into that table gets it", () => {
@@ -242,13 +242,13 @@ describe("friendlyError", () => {
       detail: "Schlüssel (id)=(7) wird noch von Tabelle referenziert.",
     })
     const msg = friendlyError(err)
-    expect(msg).toBe("Can't delete while other records are linked.")
+    expect(msg).toBe("Can't delete while “other records” are linked.")
     expect(msg).not.toContain("_fkey")
   })
 
   it("falls back to generic wording when no constraint or detail is sent", () => {
     const err = new ApiError({ status: 400, code: "FK_VIOLATION", message: "fk" })
-    expect(friendlyError(err)).toBe("Can't delete while other records are linked.")
+    expect(friendlyError(err)).toBe("Can't delete while “other records” are linked.")
   })
 
   it("captures the constraint off the response body", async () => {
