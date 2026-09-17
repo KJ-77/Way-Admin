@@ -24,7 +24,18 @@ const UserCombobox = ({ users, value, onValueChange, placeholder }: UserCombobox
   const selectedUser = users.find(u => u.id === value)
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    // `modal` is what makes the list scroll with the mouse wheel inside a dialog.
+    //
+    // Almost every use of this picker is inside a Dialog. A Radix Dialog locks
+    // scrolling for everything outside itself (react-remove-scroll), and
+    // PopoverContent is portaled to <body> — i.e. outside the dialog. So wheel and
+    // touch scrolling on the list were swallowed, while dragging the scrollbar
+    // still worked because that doesn't go through wheel events.
+    //
+    // A modal popover registers its own scroll lock, which becomes the active one
+    // and allows scrolling inside the popover. Side effects are what a combobox
+    // should do anyway: focus stays in the list and the page behind can't scroll.
+    <Popover open={open} onOpenChange={setOpen} modal>
       <PopoverTrigger asChild>
         <Button
           variant="outline"

@@ -16,6 +16,7 @@ import SchedulePage from "@/pages/schedule"
 import ClassDetailPage from "@/pages/class-detail"
 import ItemsPage from "@/pages/items"
 import PcItemsPage from "@/pages/pc-items"
+import CommunicationsPage from "@/pages/communications"
 import ClayTypesPage from "@/pages/clay-types"
 import ClassTypesPage from "@/pages/class-types"
 import ClassTypeDetailPage from "@/pages/class-type-detail"
@@ -48,6 +49,9 @@ const App = () => {
                         <Route path="/schedule/:slotId/:classDate" element={<ClassDetailPage />} />
                         <Route path="/items" element={<ItemsPage />} />
                         <Route path="/pc-items" element={<PcItemsPage />} />
+                        {/* Both staff roles — the page hides the broadcasts tab
+                            from non-admins, and every endpoint re-checks server-side. */}
+                        <Route path="/communications" element={<CommunicationsPage />} />
                         <Route
                           path="/clay-types"
                           element={

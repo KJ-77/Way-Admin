@@ -9,7 +9,6 @@ import WeeklySchedule from "@/components/dashboard/weekly-schedule"
 import WeeklyActivity from "@/components/dashboard/weekly-activity"
 import SessionsByTypeChart from "@/components/dashboard/sessions-by-type-chart"
 import CommunicationsPreview from "@/components/dashboard/communications-preview"
-import RecentActivity from "@/components/dashboard/recent-activity"
 
 const Dashboard = () => {
   const { t } = useTranslation()
@@ -52,13 +51,11 @@ const Dashboard = () => {
         <SessionsByTypeChart sessions={sessions} loading={sessionsLoading} />
       </div>
 
-      {/* 6 — Communications (preview) + recent activity */}
-      <div className="grid gap-4 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <CommunicationsPreview />
-        </div>
-        <RecentActivity />
-      </div>
+      {/* 6 — Communications, full width. Recent Activity used to share this row;
+          it was only ever mock data, and a real one needs an activity log written
+          by every mutating endpoint — not worth it for now. The component file is
+          kept (see the retired-components list in local/Claude/CLAUDE.md). */}
+      <CommunicationsPreview />
     </div>
   )
 }

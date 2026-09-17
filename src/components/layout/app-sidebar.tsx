@@ -11,6 +11,7 @@ import {
   GraduationCap,
   Shapes,
   Paintbrush,
+  MessageSquare,
   Settings,
   UserCog,
   Palette,
@@ -70,6 +71,7 @@ const AppSidebar = () => {
     { title: t("nav.tutors"), url: "/tutors", icon: GraduationCap },
     { title: t("nav.items"), url: "/items", icon: Shapes },
     { title: t("nav.pcItems"), url: "/pc-items", icon: Paintbrush },
+    { title: t("nav.communications"), url: "/communications", icon: MessageSquare },
   ]
 
   const isActive = (url: string) => {

@@ -24,13 +24,12 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import UserCombobox from "@/components/ui/user-combobox"
 import ConfirmDialog from "@/components/ui/confirm-dialog"
-import { apiFetch } from "@/lib/api"
+import CreateItemDialog from "@/components/items/create-item-dialog"
 import { friendlyError } from "@/lib/errors"
 import { useClayTypes } from "@/hooks/use-clay-types"
 import { useAuth } from "@/contexts/auth-context"
-import type { Item, ItemStage, ItemSection, User, UserPackage } from "@/types"
+import type { Item, ItemStage, ItemSection, User } from "@/types"
 
 type SortOption = "id" | "created_desc" | "created_asc"
 
@@ -136,7 +135,7 @@ const ItemsTable = ({
 }: ItemsTableProps) => {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const { user } = useAuth()
   const isAdmin = user?.groups.includes("admin") ?? false
 
@@ -151,17 +150,9 @@ const ItemsTable = ({
   const [stageFilter, setStageFilter] = useState<string>("all")
   const [sortBy, setSortBy] = useState<SortOption>("id")
 
-  // Create dialog
+  // Create dialog — the form itself lives in CreateItemDialog (shared with the
+  // client profile's Add Item action).
   const [isCreateOpen, setIsCreateOpen] = useState(false)
-  const [createUserId, setCreateUserId] = useState("")
-  const [createDescription, setCreateDescription] = useState("")
-  const [createClay, setCreateClay] = useState("")
-  const [createPackageId, setCreatePackageId] = useState("")
-  const [saving, setSaving] = useState(false)
-
-  // Per-user active subscriptions for the create dialog
-  const [userSubscriptions, setUserSubscriptions] = useState<UserPackage[]>([])
-  const [loadingSubs, setLoadingSubs] = useState(false)
 
   // Advance stage dialog
   const [advanceTarget, setAdvanceTarget] = useState<Item | null>(null)
@@ -186,31 +177,16 @@ const ItemsTable = ({
   const [deleteTarget, setDeleteTarget] = useState<Item | null>(null)
   const [deleting, setDeleting] = useState(false)
 
-  // Fetch active subscriptions when user changes in create form (Studio items only)
+  // Dashboard "New Item" quick action links here with ?new=1 — open the create
+  // dialog, then strip the flag so a refresh or Back doesn't reopen it. Same
+  // pattern as the users / sessions / subscriptions tables.
   useEffect(() => {
-    if (!createUserId) {
-      setUserSubscriptions([])
-      return
-    }
-    let cancelled = false
-    const fetchSubs = async () => {
-      setLoadingSubs(true)
-      try {
-        const res = await apiFetch(`/user-packages?user_id=${createUserId}`)
-        if (!res.ok) throw new Error()
-        const data: UserPackage[] = await res.json()
-        if (!cancelled) {
-          setUserSubscriptions(data.filter(s => s.status === "active"))
-        }
-      } catch {
-        if (!cancelled) setUserSubscriptions([])
-      } finally {
-        if (!cancelled) setLoadingSubs(false)
-      }
-    }
-    fetchSubs()
-    return () => { cancelled = true }
-  }, [createUserId])
+    if (searchParams.get("new") !== "1") return
+    setIsCreateOpen(true)
+    const next = new URLSearchParams(searchParams)
+    next.delete("new")
+    setSearchParams(next, { replace: true })
+  }, [searchParams, setSearchParams])
 
   // ── Filtering + sorting ──
   // Studio-only — PC items live on the /pc-items page
@@ -233,36 +209,7 @@ const ItemsTable = ({
 
   // ── Handlers ──
 
-  const openCreate = () => {
-    setCreateUserId("")
-    setCreateDescription("")
-    setCreateClay("")
-    setCreatePackageId("")
-    setUserSubscriptions([])
-    setIsCreateOpen(true)
-  }
-
-  const handleCreate = async () => {
-    setSaving(true)
-    try {
-      // Studio items only on this page — linked subscription required, default stage "drying",
-      // optional clay type. glaze_type is captured later when the item advances to "glaze fired".
-      await onCreateItem({
-        user_id: createUserId,
-        user_package_id: Number(createPackageId),
-        section: "Studio",
-        description: createDescription || null,
-        clay_type: createClay || null,
-      })
-      toast.success(t("items.createSuccess"))
-      setIsCreateOpen(false)
-      onRefetch()
-    } catch (err) {
-      toast.error(friendlyError(err, "items.operationFailed"))
-    } finally {
-      setSaving(false)
-    }
-  }
+  const openCreate = () => setIsCreateOpen(true)
 
   const openAdvance = (item: Item) => {
     setAdvanceTarget(item)
@@ -625,97 +572,14 @@ const ItemsTable = ({
         </CardContent>
       </Card>
 
-      {/* ── Create Dialog ── */}
-      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t("items.addItem")}</DialogTitle>
-            <DialogDescription>{t("items.addDescription")}</DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label>{t("items.client")}</Label>
-              <UserCombobox
-                users={users}
-                value={createUserId}
-                onValueChange={(v) => { setCreateUserId(v); setCreatePackageId("") }}
-                placeholder={t("items.selectClient")}
-              />
-            </div>
-
-            {/* Subscription selector — Studio items require a linked subscription */}
-            <div className="grid gap-2">
-              <Label>{t("items.subscription")}</Label>
-              {loadingSubs ? (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  {t("items.loadingSubscriptions")}
-                </div>
-              ) : !createUserId ? (
-                <p className="text-sm text-muted-foreground py-1">{t("items.selectClient")}</p>
-              ) : userSubscriptions.length === 0 ? (
-                <p className="text-sm text-destructive py-1">{t("items.noActiveSubscriptions")}</p>
-              ) : (
-                <Select
-                  value={createPackageId}
-                  onValueChange={setCreatePackageId}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={t("items.selectSubscription")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {userSubscriptions.map(sub => (
-                      <SelectItem key={sub.id} value={String(sub.id)}>
-                        {sub.package_name} — {sub.remaining_sessions} sessions, {sub.remaining_weight} kg left
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            </div>
-
-            {/* Optional metadata fields */}
-            <div className="grid gap-2">
-              <Label>{t("items.description")}</Label>
-              <Input
-                value={createDescription}
-                onChange={(e) => setCreateDescription(e.target.value)}
-                placeholder={t("items.descriptionPlaceholder")}
-              />
-            </div>
-
-            {/* Clay type — driven by the admin-managed /clay-types catalog so adding/removing
-                types here reflects what the studio actually keeps in stock. */}
-            <div className="grid gap-2">
-              <Label>{t("items.clayType")}</Label>
-              <Select value={createClay} onValueChange={setCreateClay}>
-                <SelectTrigger>
-                  <SelectValue placeholder={t("items.selectClayType")} />
-                </SelectTrigger>
-                <SelectContent>
-                  {clayTypes.map((c) => (
-                    <SelectItem key={c.name} value={c.name}>{c.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <p className="text-sm text-muted-foreground">{t("items.createHint")}</p>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsCreateOpen(false)} disabled={saving}>
-              {t("common.cancel")}
-            </Button>
-            <Button
-              onClick={handleCreate}
-              disabled={!createUserId || !createPackageId || saving}
-            >
-              {saving && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
-              {t("common.create")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* ── Create Dialog ── (shared with the client profile) */}
+      <CreateItemDialog
+        open={isCreateOpen}
+        onOpenChange={setIsCreateOpen}
+        users={users}
+        onCreate={onCreateItem}
+        onCreated={onRefetch}
+      />
 
       {/* ── Advance Stage Confirmation Dialog ── */}
       <Dialog open={!!advanceTarget} onOpenChange={(open) => !open && setAdvanceTarget(null)}>

@@ -29,6 +29,14 @@ export function getBeirutWeekStart(date: Date = new Date()): string {
   return local.toISOString().slice(0, 10)
 }
 
+// Today in Beirut as YYYY-MM-DD. Mirrors backend getBeirutToday() in
+// src/lib/time.ts — keep in lockstep. The en-CA locale formats dates as ISO, so no
+// part-assembly is needed. Using Beirut rather than the browser's own zone keeps
+// "today" consistent with what the backend validates against.
+export function getBeirutToday(): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: STUDIO_TZ }).format(new Date())
+}
+
 // Adds `days` (can be negative) to a YYYY-MM-DD string and returns YYYY-MM-DD.
 export function addDays(yyyyMmDd: string, days: number): string {
   const d = new Date(`${yyyyMmDd}T00:00:00Z`)

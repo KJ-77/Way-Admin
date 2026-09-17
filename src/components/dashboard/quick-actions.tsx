@@ -1,10 +1,11 @@
 import { useTranslation } from "react-i18next"
 import { Link } from "react-router-dom"
-import { UserPlus, CalendarPlus, PackagePlus } from "lucide-react"
+import { UserPlus, CalendarPlus, PackagePlus, Shapes } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 // Each action deep-links to the relevant page with ?new=1, which auto-opens that
-// page's create dialog (wired in users-table / sessions-table / subscriptions-table).
+// page's create dialog (wired in users-table / sessions-table / subscriptions-table /
+// items-table).
 const QuickActions = () => {
   const { t } = useTranslation()
 
@@ -36,6 +37,16 @@ const QuickActions = () => {
       bg: "bg-chart-4/10",
       ring: "hover:border-chart-4/40 hover:bg-chart-4/5",
     },
+    {
+      label: t("dashboard.newItem"),
+      description: t("dashboard.newItemDesc"),
+      // Same icon the sidebar uses for Items, so it reads as the same place.
+      icon: Shapes,
+      href: "/items?new=1",
+      color: "text-chart-3",
+      bg: "bg-chart-3/10",
+      ring: "hover:border-chart-3/40 hover:bg-chart-3/5",
+    },
   ]
 
   return (
@@ -43,7 +54,7 @@ const QuickActions = () => {
       <CardHeader className="pb-3">
         <CardTitle className="text-base">{t("dashboard.quickActions")}</CardTitle>
       </CardHeader>
-      <CardContent className="grid gap-3 sm:grid-cols-3">
+      <CardContent className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {actions.map((action) => (
           <Link
             key={action.label}

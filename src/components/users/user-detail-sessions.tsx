@@ -3,6 +3,7 @@ import { Clock } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
+import { formatClockTime } from "@/lib/utils"
 import type { Session } from "@/types"
 
 interface UserDetailSessionsProps {
@@ -98,11 +99,19 @@ const UserDetailSessions = ({ sessions, loading }: UserDetailSessionsProps) => {
                       </span>
                     </div>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      {/* Show class_date when present (the actual class day), else the
-                          session's logged-at timestamp (legacy fallback). */}
+                      {/* Show the class's own date and time when the session is linked to a
+                          class, else the session's logged-at timestamp (legacy fallback).
+                          The time comes from the class slot, not from when the row was
+                          logged — staff often log a session after the fact. */}
                       {session.class_date ? (
                         <>
                           {formatClassDate(session.class_date)}
+                          {session.class_start_time && (
+                            <span className="ms-1.5" dir="ltr">
+                              · {formatClockTime(session.class_start_time)}
+                              {session.class_end_time && `–${formatClockTime(session.class_end_time)}`}
+                            </span>
+                          )}
                           <span className="ms-1.5 text-muted-foreground/70">(logged {date})</span>
                         </>
                       ) : (

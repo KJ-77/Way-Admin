@@ -18,7 +18,7 @@ const UserDetailPage = () => {
   const { user, loading, error, refetch: refetchUser } = useUser(id)
   const { sessions, loading: sessionsLoading, refetch: refetchSessions } = useUserSessions(id)
   const { subscriptions, loading: subsLoading, refetch: refetchSubscriptions } = useUserSubscriptions(id)
-  const { items, loading: itemsLoading } = useUserItems(id)
+  const { items, loading: itemsLoading, refetch: refetchItems } = useUserItems(id)
   const { tutors } = useTutors()
 
   if (loading) {
@@ -54,6 +54,7 @@ const UserDetailPage = () => {
           onSessionCreated={handleSessionCreated}
           onSubscriptionCreated={refetchSubscriptions}
           onUserUpdated={refetchUser}
+          onItemCreated={refetchItems}
         />
       </UserProfileHeader>
       <UserDetailStats

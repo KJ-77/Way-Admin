@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react"
 import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
-import { CalendarPlus, PackagePlus, Pencil, Loader2, KeyRound, Copy, Check, Trash2 } from "lucide-react"
+import { CalendarPlus, PackagePlus, Pencil, Loader2, KeyRound, Copy, Check, Trash2, Shapes } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -16,7 +16,9 @@ import { apiFetch } from "@/lib/api"
 import { throwIfNotOk, friendlyError } from "@/lib/errors"
 import AddUserDialog from "@/components/users/add-user-dialog"
 import ClassPicker from "@/components/sessions/class-picker"
-import type { User, UserPackage, Package } from "@/types"
+import CreateItemDialog from "@/components/items/create-item-dialog"
+import { getBeirutToday } from "@/hooks/use-schedule"
+import type { User, UserPackage, Package, Item } from "@/types"
 import type { CreateUserResponse } from "@/hooks/use-users"
 
 interface UserDetailQuickActionsProps {
@@ -25,10 +27,18 @@ interface UserDetailQuickActionsProps {
   onSessionCreated: () => void
   onSubscriptionCreated: () => void
   onUserUpdated: () => void
+  onItemCreated: () => void
 }
 
+// A fresh subscribe form. The purchase date defaults to today in Beirut; staff can
+// pick an earlier day for a subscription recorded after the fact.
+//
+// A function, not a constant: "today" has to be read when the dialog OPENS, or a
+// page left open overnight would default to yesterday.
+const freshSubscribeForm = () => ({ package_id: "", notes: "", purchase_date: getBeirutToday() })
+
 const UserDetailQuickActions = ({
-  user, subscriptions, onSessionCreated, onSubscriptionCreated, onUserUpdated,
+  user, subscriptions, onSessionCreated, onSubscriptionCreated, onUserUpdated, onItemCreated,
 }: UserDetailQuickActionsProps) => {
   const { t } = useTranslation()
 
@@ -50,10 +60,14 @@ const UserDetailQuickActions = ({
 
   // ── Subscribe dialog state ──
   const [subscribeOpen, setSubscribeOpen] = useState(false)
-  const [subscribeForm, setSubscribeForm] = useState({ package_id: "", notes: "" })
+  // Lazy initialiser — the function runs once, on first render.
+  const [subscribeForm, setSubscribeForm] = useState(freshSubscribeForm)
   const [subscribeSaving, setSubscribeSaving] = useState(false)
   const [packages, setPackages] = useState<Package[]>([])
   const [loadingPkgs, setLoadingPkgs] = useState(false)
+
+  // ── Add item dialog state ── (form + subscription lookup live in CreateItemDialog)
+  const [itemOpen, setItemOpen] = useState(false)
 
   // ── Edit user dialog state ──
   const [editOpen, setEditOpen] = useState(false)
@@ -76,6 +90,12 @@ const UserDetailQuickActions = ({
     })
     await throwIfNotOk(response, "Failed to update client")
     return response.json()
+  }
+
+  const handleCreateItem = async (body: Record<string, unknown>): Promise<Item> => {
+    const res = await apiFetch("/items", { method: "POST", body: JSON.stringify(body) })
+    await throwIfNotOk(res, "Failed to create item")
+    return res.json()
   }
 
   // Stub — never called since dialog opens in edit mode only
@@ -136,6 +156,8 @@ const UserDetailQuickActions = ({
           user_id: user.id,
           package_id: Number(subscribeForm.package_id),
           notes: subscribeForm.notes || undefined,
+          // Drives the expiry too: the backend sets expiry to purchase date + 2 months.
+          purchase_date: subscribeForm.purchase_date,
         }),
       })
       await throwIfNotOk(res, "Failed to create subscription")
@@ -208,8 +230,9 @@ const UserDetailQuickActions = ({
 
   return (
     <>
-      {/* Action buttons */}
-      <div className="flex gap-2">
+      {/* Action buttons. flex-wrap is the mobile fix: without it the row never
+          breaks, and on a phone the buttons ran straight past the card's edge. */}
+      <div className="flex flex-wrap gap-2">
         <Button
           variant="outline"
           size="sm"
@@ -242,12 +265,21 @@ const UserDetailQuickActions = ({
           size="sm"
           className="gap-1.5"
           onClick={() => {
-            setSubscribeForm({ package_id: "", notes: "" })
+            setSubscribeForm(freshSubscribeForm())
             setSubscribeOpen(true)
           }}
         >
           <PackagePlus className="h-3.5 w-3.5" />
           {t("subscriptions.addSubscription")}
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-1.5"
+          onClick={() => setItemOpen(true)}
+        >
+          <Shapes className="h-3.5 w-3.5" />
+          {t("users.addItem")}
         </Button>
         <Button
           variant="outline"
@@ -393,6 +425,20 @@ const UserDetailQuickActions = ({
             </div>
 
             <div className="grid gap-2">
+              <Label htmlFor="quick-purchase-date">{t("subscriptions.purchaseDate")} *</Label>
+              <Input
+                id="quick-purchase-date"
+                type="date"
+                value={subscribeForm.purchase_date}
+                // Can't have been bought in the future. Beirut's today, to match the
+                // backend's check exactly.
+                max={getBeirutToday()}
+                onChange={(e) => setSubscribeForm(prev => ({ ...prev, purchase_date: e.target.value }))}
+              />
+              <p className="text-xs text-muted-foreground">{t("subscriptions.purchaseDateHint")}</p>
+            </div>
+
+            <div className="grid gap-2">
               <Label>{t("subscriptions.notes")}</Label>
               <Input
                 value={subscribeForm.notes}
@@ -405,13 +451,25 @@ const UserDetailQuickActions = ({
             <Button variant="outline" onClick={() => setSubscribeOpen(false)} disabled={subscribeSaving}>
               {t("common.cancel")}
             </Button>
-            <Button onClick={handleSubscribe} disabled={!subscribeForm.package_id || subscribeSaving}>
+            <Button
+              onClick={handleSubscribe}
+              disabled={!subscribeForm.package_id || !subscribeForm.purchase_date || subscribeSaving}
+            >
               {subscribeSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {t("common.create")}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* ── Add Item Dialog ── the client is fixed, so no picker is shown */}
+      <CreateItemDialog
+        open={itemOpen}
+        onOpenChange={setItemOpen}
+        fixedUser={user}
+        onCreate={handleCreateItem}
+        onCreated={onItemCreated}
+      />
 
       {/* ── Edit User Dialog ── */}
       <AddUserDialog

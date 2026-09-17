@@ -10,7 +10,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import { Separator } from "@/components/ui/separator"
@@ -26,6 +25,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import ConfirmDialog from "@/components/ui/confirm-dialog"
 import UserCombobox from "@/components/ui/user-combobox"
+import AttendanceQuickSwap from "@/components/sessions/attendance-quick-swap"
 import { useClassDetail } from "@/hooks/use-class-detail"
 import { useClassTypes } from "@/hooks/use-class-types"
 import { apiFetch } from "@/lib/api"
@@ -575,9 +575,14 @@ const ClassDetail = () => {
                   )}
                 </div>
                 <div className="flex flex-col items-end gap-1.5">
-                  <Badge variant="outline" className={attendanceBadgeClass[s.attendance]}>
-                    {t(`sessions.${s.attendance === "cancelled - no charge" ? "cancelledNoCharge" : s.attendance}`)}
-                  </Badge>
+                  {/* Tap the badge to change attendance. Refetches the whole class,
+                      since a no-charge swap also moves the subscription balance. */}
+                  <AttendanceQuickSwap
+                    session={s}
+                    classDate={classDate}
+                    badgeClassName={attendanceBadgeClass[s.attendance]}
+                    onChanged={refetch}
+                  />
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="icon" className="h-7 w-7">

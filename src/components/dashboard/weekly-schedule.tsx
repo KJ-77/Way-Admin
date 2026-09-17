@@ -6,7 +6,7 @@ import {
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { useSchedule, getBeirutWeekStart, addDays } from "@/hooks/use-schedule"
+import { useSchedule, getBeirutWeekStart, getBeirutToday, addDays } from "@/hooks/use-schedule"
 import { exportScheduleToPdf } from "@/lib/schedule-pdf"
 import { toast } from "sonner"
 import type { ScheduleSlot } from "@/types"
@@ -17,8 +17,6 @@ const DAY_SHORT = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 const titleCase = (s: string) => s.replace(/\b\w/g, c => c.toUpperCase())
 const hm = (time: string) => (time.length > 5 ? time.slice(0, 5) : time)
 
-// Beirut "today" as YYYY-MM-DD (en-CA formats as ISO) — used to highlight today's column.
-const beirutToday = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Beirut" }).format(new Date())
 
 // The date number under each day header, e.g. "21".
 const dayNumber = (weekStart: string, dayIndex: number) => {
@@ -44,7 +42,8 @@ const WeeklySchedule = () => {
   }, [slots])
 
   const isCurrentWeek = weekStart === getBeirutWeekStart()
-  const today = beirutToday()
+  // Used to highlight today's column.
+  const today = getBeirutToday()
 
   const handleExport = () => {
     const ok = exportScheduleToPdf(weekStart, slots)

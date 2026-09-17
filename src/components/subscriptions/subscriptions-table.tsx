@@ -30,6 +30,7 @@ import { throwIfNotOk, friendlyError } from "@/lib/errors"
 import UserCombobox from "@/components/ui/user-combobox"
 import ConfirmDialog from "@/components/ui/confirm-dialog"
 import ClassPicker from "@/components/sessions/class-picker"
+import { getBeirutToday } from "@/hooks/use-schedule"
 import type { UserPackage, User, Package, PackageStatus, Attendance } from "@/types"
 
 // ── Props ──
@@ -52,6 +53,8 @@ interface CreateFormData {
   user_id: string
   package_id: string
   notes: string
+  // YYYY-MM-DD. The backend also derives the expiry from it (purchase + 2 months).
+  purchase_date: string
 }
 
 interface EditFormData {
@@ -59,7 +62,15 @@ interface EditFormData {
   notes: string
 }
 
-const emptyCreateForm: CreateFormData = { user_id: "", package_id: "", notes: "" }
+// A fresh create form. The purchase date defaults to today in Beirut, and staff can
+// pick an earlier day for a subscription recorded after the fact.
+//
+// A function, not a constant, on purpose: "today" has to be read when the dialog
+// OPENS. A module-level constant would freeze the day the page was loaded, so a
+// dashboard left open overnight would quietly default to yesterday.
+const freshCreateForm = (): CreateFormData => ({
+  user_id: "", package_id: "", notes: "", purchase_date: getBeirutToday(),
+})
 const emptyEditForm: EditFormData = { expiry_date: "", notes: "" }
 
 // ── Status badge colors ──
@@ -96,7 +107,8 @@ const SubscriptionsTable = ({
   const [deleteTarget, setDeleteTarget] = useState<UserPackage | null>(null)
 
   // Form state
-  const [createForm, setCreateForm] = useState<CreateFormData>(emptyCreateForm)
+  // Passing the function (not calling it) makes it a lazy initialiser — run once.
+  const [createForm, setCreateForm] = useState<CreateFormData>(freshCreateForm)
   const [editForm, setEditForm] = useState<EditFormData>(emptyEditForm)
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -116,7 +128,7 @@ const SubscriptionsTable = ({
   // then strip the flag so a refresh/back doesn't re-trigger it.
   useEffect(() => {
     if (searchParams.get("new") !== "1") return
-    setCreateForm(emptyCreateForm)
+    setCreateForm(freshCreateForm())
     setIsCreateOpen(true)
     const next = new URLSearchParams(searchParams)
     next.delete("new")
@@ -143,7 +155,7 @@ const SubscriptionsTable = ({
   // ── Dialog openers ──
 
   const openCreate = () => {
-    setCreateForm(emptyCreateForm)
+    setCreateForm(freshCreateForm())
     setIsCreateOpen(true)
   }
 
@@ -179,6 +191,7 @@ const SubscriptionsTable = ({
         user_id: createForm.user_id,
         package_id: Number(createForm.package_id),
         notes: createForm.notes || undefined,
+        purchase_date: createForm.purchase_date,
       })
       toast.success(t("subscriptions.createSuccess"))
       setIsCreateOpen(false)
@@ -484,6 +497,21 @@ const SubscriptionsTable = ({
               </Select>
             </div>
 
+            {/* Purchase date — defaults to today, editable (see freshCreateForm) */}
+            <div className="grid gap-2">
+              <Label htmlFor="create-purchase-date">{t("subscriptions.purchaseDate")} *</Label>
+              <Input
+                id="create-purchase-date"
+                type="date"
+                value={createForm.purchase_date}
+                // Can't have been bought in the future — Beirut's today, matching
+                // the backend check.
+                max={getBeirutToday()}
+                onChange={(e) => setCreateForm(prev => ({ ...prev, purchase_date: e.target.value }))}
+              />
+              <p className="text-xs text-muted-foreground">{t("subscriptions.purchaseDateHint")}</p>
+            </div>
+
             {/* Notes */}
             <div className="grid gap-2">
               <Label>{t("subscriptions.notes")}</Label>
@@ -500,7 +528,7 @@ const SubscriptionsTable = ({
             </Button>
             <Button
               onClick={handleCreate}
-              disabled={!createForm.user_id || !createForm.package_id || saving}
+              disabled={!createForm.user_id || !createForm.package_id || !createForm.purchase_date || saving}
             >
               {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {t("common.create")}

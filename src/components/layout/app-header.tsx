@@ -39,6 +39,10 @@ const AppHeader = () => {
       "pc-items": "nav.pcItems",
       "clay-types": "nav.clayTypes",
       "class-types": "nav.classTypes",
+      // Needs an explicit entry for the same reason as "items": the root
+      // `communications` key is an object in en.json, so the `t(segment)` fallback
+      // would surface an error string instead of a label.
+      communications: "nav.communications",
     }
 
     return segments.map((segment, index) => {

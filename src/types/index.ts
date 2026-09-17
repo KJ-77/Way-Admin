@@ -212,3 +212,139 @@ export interface AdminAccount {
   created_at: string
   updated_at: string
 }
+
+// ── Communications ──
+//
+// Mirrors Way-Backend/src/lib/types.ts. Outbound messages are DRAFTED into a queue
+// (status 'pending_approval') and only sent once a staff member approves — nothing
+// ever sends automatically.
+//
+// NOTE ON SMS: the studio runs on SMS, and Lebanon has no inbound SMS (no long
+// codes, no short codes — only outbound alphanumeric sender IDs). So `direction:
+// "inbound"`, `unread_count` and the 'read' status exist in these types but never
+// occur today. They're the WhatsApp upgrade path, kept so the UI doesn't need
+// rewriting if the studio switches later.
+
+export type MessageDirection = "outbound" | "inbound"
+// How a message is delivered. Mirrors Way-Backend's message_channel enum.
+//   whatsapp_manual — staff send it by hand from the studio's WhatsApp (live today)
+//   sms             — AWS SMS, built but dormant pending AWS production access
+//   whatsapp        — reserved for the WhatsApp Business API
+export type MessageChannel = "sms" | "whatsapp" | "whatsapp_manual"
+export type MessageStatus =
+  | "pending_approval"
+  | "queued"
+  | "sent"
+  | "delivered"
+  | "read"
+  | "failed"
+  | "cancelled"
+export type MessageKind = "template" | "freeform"
+export type MessageTrigger = "client_created" | "item_stage" | "broadcast" | "manual" | "inbound"
+export type TemplateCategory = "marketing" | "utility" | "authentication"
+export type TemplateStatus = "draft" | "pending" | "approved" | "rejected" | "disabled"
+export type BroadcastStatus = "draft" | "pending_approval" | "sending" | "sent" | "cancelled"
+
+export interface MessageTemplate {
+  id: number
+  name: string
+  language: string
+  category: TemplateCategory
+  // Positional placeholders: {{1}}, {{2}}, …
+  body: string
+  // Human labels for each placeholder, in order — e.g. ["client name", "stage"]
+  variable_labels: string[]
+  status: TemplateStatus
+  provider_template_id: string | null
+  // Compound key wiring this template to an automatic event, e.g. "item_stage:ready"
+  trigger_event: string | null
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface Message {
+  id: number
+  conversation_id: number
+  direction: MessageDirection
+  channel: MessageChannel
+  status: MessageStatus
+  kind: MessageKind
+  template_id: number | null
+  template_variables: Record<string, string> | null
+  // Fully-rendered text, snapshotted at draft time — exactly what the client reads.
+  body: string
+  trigger: MessageTrigger
+  trigger_ref: string | null
+  broadcast_id: number | null
+  provider_message_id: string | null
+  error_code: string | null
+  error_message: string | null
+  attempt_count: number
+  last_attempt_at: string | null
+  created_by: string | null
+  approved_by: string | null
+  approved_at: string | null
+  sent_at: string | null
+  read_at: string | null
+  created_at: string
+  updated_at: string
+  // Joined
+  user_id: string
+  user_name: string
+  phone: string
+  template_name: string | null
+  template_category: TemplateCategory | null
+}
+
+export interface Conversation {
+  id: number
+  user_id: string
+  channel: MessageChannel
+  phone: string
+  user_name: string
+  last_message_at: string | null
+  last_message_preview: string | null
+  last_inbound_at: string | null
+  unread_count: number
+  created_at: string
+  updated_at: string
+}
+
+export interface Broadcast {
+  id: number
+  name: string
+  template_id: number
+  template_name: string
+  template_variables: Record<string, string>
+  channel: MessageChannel
+  audience: Record<string, unknown>
+  status: BroadcastStatus
+  created_by: string | null
+  created_at: string
+  updated_at: string
+  sent_at: string | null
+  total_count: number
+  sent_count: number
+  failed_count: number
+  pending_count: number
+}
+
+// Clients who matched a broadcast's audience but whose stored phone number couldn't
+// be parsed — they were left out of the fan-out and need their number fixed.
+export interface SkippedRecipient {
+  id: string
+  name: string
+  phone: string
+}
+
+export interface BroadcastCreated extends Broadcast {
+  skipped: SkippedRecipient[]
+}
+
+/** One chunk of a broadcast send. The UI loops until `remaining` hits 0. */
+export interface DrainResult {
+  sent: number
+  failed: number
+  remaining: number
+}

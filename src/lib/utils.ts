@@ -13,3 +13,14 @@ export function cn(...inputs: ClassValue[]) {
 export function normalizePhone(phone: string): string {
   return phone.replace(/\s+/g, "")
 }
+
+// "18:00:00" → "18:00". Class times are wall-clock times at the studio, stored as a
+// Postgres TIME, so they're formatted as plain strings — never via Date, which would
+// apply the browser's timezone and could shift the hour. 24-hour to match how the
+// schedule displays classes.
+// (class-detail.tsx and schedule-calendar.tsx each still carry a private formatTime
+// that does the same thing — candidates to switch over to this.)
+export function formatClockTime(hhmmss: string): string {
+  const [h = "00", m = "00"] = hhmmss.split(":")
+  return `${h.padStart(2, "0")}:${m.padStart(2, "0")}`
+}
